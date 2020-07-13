@@ -1,0 +1,28 @@
+abigen
+info.txt
+tmp
+build
+
+node_modules
+/.project
+/.settings/
+
+
+/docs/_build/
+lib/
+
+# Logs
+*.log
+
+# Coverage
+/.nyc_output
+/coverage
+
+# IDE specific
+/.vscode
+
+/.DS_Store
+src/.DS_Store
+
+apidoc/
+node_modules
