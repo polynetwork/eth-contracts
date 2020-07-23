@@ -3,19 +3,21 @@ pragma solidity ^0.5.0;
 import "./ERC20Detailed.sol";
 import "./../../GSN/Context.sol";
 import "./ERC20.sol";
+import "./../../../core/cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 
 contract ERC20Extended is Context, ERC20, ERC20Detailed {
 
-    address public managerContract; // here managerContract should only be set as the ETH cross chain managing contract address
+    address public managerProxyContract; // here managerContract should only be set as the ETH cross chain managing contract address
     address public operator;    // operator should be the address who deploys this contract, and responsible for 'setManager' and 'bindContractAddrWithChainId'
-    mapping(uint64 => bytes) public contractAddrBindChainId;
+    mapping(uint64 => bytes) public bondAssetHashes;
 
-    event BindContractAddrWithChainIdEvent(uint64 chainId, bytes contractAddr);
-    event SetManagerEvent(address managerContract);
+    event BindAssetHash(uint64 chainId, bytes contractAddr);
+    event SetManagerProxyEvent(address managerContract);
 
     
     modifier onlyManagerContract() {
-        require(_msgSender() == managerContract) ;
+        IEthCrossChainManagerProxy ieccmp = IEthCrossChainManagerProxy(managerProxyContract);
+        require(_msgSender() == ieccmp.getEthCrossChainManager(), "msgSender is not EthCrossChainManagerContract");
         _;
     }
 
@@ -46,19 +48,18 @@ contract ERC20Extended is Context, ERC20, ERC20Detailed {
     *                                       are locked in the source chain
     *  @param ethCrossChainContractAddr     The ETH cross chain management contract address
     */
-    function setManager(address ethCrossChainContractAddr) onlyOperator public {
-        managerContract = ethCrossChainContractAddr;
-        emit SetManagerEvent(managerContract);
+    function setManagerProxy(address ethCrossChainManagerProxyAddr) onlyOperator public {
+        managerProxyContract = ethCrossChainManagerProxyAddr;
+        emit SetManagerProxyEvent(managerProxyContract);
     }
     
     /* @notice              Bind the target chain with the target chain id
     *  @param chainId       The target chain id
     *  @param contractAddr  The specific contract address in bytes format in the target chain
     */
-    function bindContractAddrWithChainId(uint64 chainId, bytes memory contractAddr) onlyOperator public {
+    function bindAssetHash(uint64 chainId, bytes memory contractAddr) onlyOperator public {
         require(chainId >= 0, "chainId illegal!");
-        require(contractAddr.lenght <= 100, "contractAddr too long");
-        contractAddrBindChainId[chainId] = contractAddr;
-        emit BindContractAddrWithChainIdEvent(chainId, contractAddr);
+        bondAssetHashes[chainId] = contractAddr;
+        emit BindAssetHash(chainId, contractAddr);
     }
 }
