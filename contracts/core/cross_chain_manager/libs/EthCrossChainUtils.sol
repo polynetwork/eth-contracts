@@ -75,17 +75,17 @@ library ECCUtils {
          bytes memory buff ;
          buff = abi.encodePacked(buff, ZeroCopySink.WriteUint16(uint16(_keyLen)));
 
-         address[] memory keeprs = new address[](_keyLen);
+         address[] memory keepers = new address[](_keyLen);
 
          for(uint i = 0; i < _keyLen; i++){
              buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN))));
              bytes32 hash = keccak256(Utils.slice(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN), 3, 64));
-             keeprs[i] = address(uint160(uint256(hash)));
+             keepers[i] = address(uint160(uint256(hash)));
          }
 
          buff = abi.encodePacked(buff, ZeroCopySink.WriteUint16(uint16(_m)));
          bytes20  nextBookKeeper = ripemd160(abi.encodePacked(sha256(buff)));
-         return (nextBookKeeper, keeprs);
+         return (nextBookKeeper, keepers);
     }
 
     /* @notice              Verify public key derived from Poly chain
@@ -107,7 +107,7 @@ library ECCUtils {
     *  @return              true or false
     */
     function verifySig(bytes memory _rawHeader, bytes memory _sigList, address[] memory _keepers, uint _m) internal pure returns (bool){
-        bytes32 hash = sha256(abi.encodePacked(sha256(_rawHeader)));
+        bytes32 hash = getHeaderHash(_rawHeader);
 
         uint signed = 0;
         uint sigCount = _sigList.length / POLYCHAIN_SIGNATURE_LEN;
@@ -123,7 +123,7 @@ library ECCUtils {
         }
         return signed >= _m;
     }
-
+    
     /* @notice               Serialize Poly chain book keepers' info in Ethereum addresses format into raw bytes
     *  @param keepersBytes   The serialized addresses
     *  @return               serialized bytes result
@@ -223,6 +223,6 @@ library ECCUtils {
     *  @return            header hash same as Poly chain
     */
     function getHeaderHash(bytes memory rawHeader) internal pure returns (bytes32) {
-        return sha256(rawHeader);
+        return sha256(abi.encodePacked(sha256(rawHeader)));
     }
 }
