@@ -172,8 +172,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
 
         return true;
     }
-
-
+    
     /* @notice                  Dynamically invoke the targeting contract, and trigger executation of cross chain tx on Ethereum side
     *  @param _toContract       The targeting contract that will be invoked by the Ethereum Cross Chain Manager contract
     *  @param _method           At which method will be invoked within the targeting contract

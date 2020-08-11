@@ -2,6 +2,7 @@ abigen
 info.txt
 tmp
 build
+.idea
 
 node_modules
 /.project
