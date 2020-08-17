@@ -39,7 +39,7 @@ contract UtilsMock {
         return Utils.slice(_bytes, _start, _length);
     }
 
-    function containsAddress(address[] memory arr, address addr) public pure returns(bool){
-        return Utils.containsAddress(arr, addr);
+    function containMAddresses(address[] memory keepers, address[] memory signers, uint m) public pure returns(bool){
+        return Utils.containMAddresses(keepers, signers, m);
     }
 }

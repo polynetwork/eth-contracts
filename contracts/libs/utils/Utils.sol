@@ -247,20 +247,23 @@ library Utils {
 
         return tempBytes;
     }
-
-    /* @notice              Decide if _addrArray contains _addr
-    *  @param _addrArray    The array consist of serveral address
-    *  @param _addr         The specific address to be looked into
+    /* @notice              Check if the elements number of _signers within _keepers array is no less than _m
+    *  @param _keepers      The array consists of serveral address
+    *  @param _signers      Some specific addresses to be looked into
+    *  @param _m            The number requirement paramter
     *  @return              True means containment, false meansdo do not contain.
     */
-    function containsAddress(address[] memory _addrArray, address _addr) internal pure returns (bool exist){
-        exist = false;
-        for(uint i = 0; i < _addrArray.length; i++){
-            if (_addr == _addrArray[i]){
-                exist = true;
-                break;
+    function containMAddresses(address[] memory _keepers, address[] memory _signers, uint _m) internal pure returns (bool){
+        uint m = 0;
+        for(uint i = 0; i < _signers.length; i++){
+            for (uint j = 0; j < _keepers.length; j++) {
+                if (_signers[i] == _keepers[j]) {
+                    m++;
+                    delete _keepers[j];
+                }
             }
         }
+        return m >= _m;
     }
 
     /* @notice              TODO

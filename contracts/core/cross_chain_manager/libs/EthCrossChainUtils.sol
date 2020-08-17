@@ -111,19 +111,17 @@ library ECCUtils {
 
         uint signed = 0;
         uint sigCount = _sigList.length / POLYCHAIN_SIGNATURE_LEN;
+        address[] memory signers = new address[](sigCount);
         for(uint j = 0; j  < sigCount; j++){
             bytes32 r = Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN, 32));
             bytes32 s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
             uint8 v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
-
-            address signer =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
-            if (Utils.containsAddress(_keepers, signer)){
-                signed += 1;
-            }
+            signers[j] =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
         }
-        return signed >= _m;
+        return Utils.containMAddresses(_keepers, signers, _m);
     }
     
+
     /* @notice               Serialize Poly chain book keepers' info in Ethereum addresses format into raw bytes
     *  @param keepersBytes   The serialized addresses
     *  @return               serialized bytes result
