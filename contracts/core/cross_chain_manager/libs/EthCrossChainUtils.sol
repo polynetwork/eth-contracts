@@ -47,7 +47,7 @@ library ECCUtils {
         (value, off)  = ZeroCopySource.NextVarBytes(_auditPath, off);
 
         bytes32 hash = Utils.hashLeaf(value);
-        uint size = (_auditPath.length - off) / 32;
+        uint size = (_auditPath.length - off) / 33;
         bytes32 nodeHash;
         byte pos;
         for (uint i = 0; i < size; i++) {
