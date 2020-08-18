@@ -75,11 +75,12 @@ library ECCUtils {
          bytes memory buff;
          buff = ZeroCopySink.WriteUint16(uint16(_keyLen));
          address[] memory keepers = new address[](_keyLen);
-
+         bytes32 hash;
+         bytes memory publicKey;
          for(uint i = 0; i < _keyLen; i++){
-             bytes memory publicKey = Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN);
+             publicKey = Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN);
              buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(publicKey)));
-             bytes32 hash = keccak256(Utils.slice(publicKey, 3, 64));
+             hash = keccak256(Utils.slice(publicKey, 3, 64));
              keepers[i] = address(uint160(uint256(hash)));
          }
 
