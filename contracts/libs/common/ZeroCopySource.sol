@@ -1,17 +1,18 @@
 pragma solidity ^0.5.0;
 
 /**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
+ * @dev Wrappers over decoding and deserialization operation from bytes into bassic types in Solidity for PolyNetwork cross chain utility.
  *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
+ * Decode into basic types in Solidity from bytes easily. It's designed to be used 
+ * for PolyNetwork cross chain application, and the decoding rules on Ethereum chain 
+ * and the encoding rule on other chains should be consistent, and . Here we
+ * follow the underlying deserialization rule with implementation found here: 
+ * https://github.com/polynetwork/poly/blob/master/common/zero_copy_source.go
  *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
+ * Using this library instead of the unchecked serialization method can help reduce
+ * the risk of serious bugs and handfule, so it's recommended to use it.
+ *
+ * Please note that risk can be minimized, yet not eliminated.
  */
 library ZeroCopySource {
     /* @notice              Read next byte as boolean type starting at offset from buff
