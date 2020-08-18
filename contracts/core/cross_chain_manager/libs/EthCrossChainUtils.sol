@@ -78,8 +78,9 @@ library ECCUtils {
          address[] memory keepers = new address[](_keyLen);
 
          for(uint i = 0; i < _keyLen; i++){
-             buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN))));
-             bytes32 hash = keccak256(Utils.slice(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN), 3, 64));
+             bytes memory publicKey = Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN);
+             buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(publicKey)));
+             bytes32 hash = keccak256(Utils.slice(publicKey, 3, 64));
              keepers[i] = address(uint160(uint256(hash)));
          }
 
@@ -96,6 +97,7 @@ library ECCUtils {
     function verifyPubkey(bytes memory _pubKeyList) internal pure returns (bytes20, address[] memory) {
         require(_pubKeyList.length % POLYCHAIN_PUBKEY_LEN == 0, "_pubKeyList length illegal!");
         uint n = _pubKeyList.length / POLYCHAIN_PUBKEY_LEN;
+        require(n >= 1, "too short _pubKeyList!");
         return _getBookKeeper(n, n - (n - 1) / 3, _pubKeyList);
     }
 
