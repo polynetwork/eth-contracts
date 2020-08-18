@@ -72,9 +72,8 @@ library ECCUtils {
     *  @return              two element: next book keeper, consensus node signer addresses
     */
     function _getBookKeeper(uint _keyLen, uint _m, bytes memory _pubKeyList) internal pure returns (bytes20, address[] memory){
-         bytes memory buff ;
-         buff = abi.encodePacked(buff, ZeroCopySink.WriteUint16(uint16(_keyLen)));
-
+         bytes memory buff;
+         buff = ZeroCopySink.WriteUint16(uint16(_keyLen));
          address[] memory keepers = new address[](_keyLen);
 
          for(uint i = 0; i < _keyLen; i++){
@@ -114,10 +113,13 @@ library ECCUtils {
         uint signed = 0;
         uint sigCount = _sigList.length / POLYCHAIN_SIGNATURE_LEN;
         address[] memory signers = new address[](sigCount);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
         for(uint j = 0; j  < sigCount; j++){
-            bytes32 r = Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN, 32));
-            bytes32 s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
-            uint8 v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
+            r = Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN, 32));
+            s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
+            v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
             signers[j] =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
         }
         return Utils.containMAddresses(_keepers, signers, _m);
