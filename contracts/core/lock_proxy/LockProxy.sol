@@ -112,7 +112,7 @@ contract LockProxy is Context {
     // *  @param fromChainId       The source chain id
     // */
     function unlock(bytes memory argsBs, bytes memory fromContractAddr, uint64 fromChainId) onlyManagerContract public returns (bool) {
-        TxArgs memory args = _deserializTxArgs(argsBs);
+        TxArgs memory args = _deserializeTxArgs(argsBs);
 
         require(fromContractAddr.length > 0, "from proxy contract address cannot be empty");
         require(Utils.equalStorage(proxyHashMap[fromChainId], fromContractAddr), "From Proxy contract address error!");
@@ -185,7 +185,7 @@ contract LockProxy is Context {
         return buff;
     }
 
-    function _deserializTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
+    function _deserializeTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
         TxArgs memory args;
         uint256 off = 0;
         (args.toAssetHash, off) = ZeroCopySource.NextVarBytes(valueBs, off);

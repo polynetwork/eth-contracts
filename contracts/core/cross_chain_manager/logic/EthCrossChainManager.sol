@@ -115,7 +115,13 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         emit CrossChainEvent(tx.origin, paramTxHash, msg.sender, toChainId, toContract, rawParam);
         return true;
     }
-
+    function verifyHeader1(bytes memory rawHeader, bytes memory headerSig) whenNotPaused public returns (address[] memory) {
+        IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
+        address[] memory polyChainBKs = ECCUtils.deserializeKeepers(eccd.getCurEpochConPubKeyBytes());
+        uint n = polyChainBKs.length;
+        require(ECCUtils.verifySig(rawHeader, headerSig, polyChainBKs, n - ( n - 1) / 3), "Verify poly chain header signature failed!");
+        return polyChainBKs;
+    }
     /* @notice              Verify Poly chain header and proof, execute the cross chain tx from Poly chain to Ethereum
     *  @param proof         Poly chain tx merkle proof
     *  @param rawHeader     The header containing crossStateRoot to verify the above tx merkle proof
@@ -153,7 +159,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         bytes memory toMerkleValueBs = ECCUtils.merkleProve(proof, header.crossStatesRoot);
         
         // Parse the toMerkleValue struct and make sure the tx has not been processed, then mark this tx as processed
-        ECCUtils.ToMerkleValue memory toMerkleValue = ECCUtils.deserializMerkleValue(toMerkleValueBs);
+        ECCUtils.ToMerkleValue memory toMerkleValue = ECCUtils.deserializeMerkleValue(toMerkleValueBs);
         require(!eccd.checkIfFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "the transaction has been executed!");
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
@@ -164,7 +170,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
         //TODO: check this part to make sure we commit the next line when doing local net UT test
-        require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
+        // require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 
         // Fire the cross chain event denoting the executation of cross chain tx is successful,
         // and this tx is coming from other public chains to current Ethereum network

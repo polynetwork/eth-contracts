@@ -161,7 +161,7 @@ library ECCUtils {
     *  @param _valueBs       Poly chain transaction raw bytes
     *  @return               ToMerkleValue struct
     */
-    function deserializMerkleValue(bytes memory _valueBs) internal pure returns (ToMerkleValue memory) {
+    function deserializeMerkleValue(bytes memory _valueBs) internal pure returns (ToMerkleValue memory) {
         ToMerkleValue memory toMerkleValue;
         uint256 off = 0;
 
