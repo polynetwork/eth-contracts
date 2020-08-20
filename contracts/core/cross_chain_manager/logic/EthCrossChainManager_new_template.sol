@@ -164,7 +164,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
         //TODO: check this part to make sure we commit the next line when doing local net UT test
-        // require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
+        require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 
         // Fire the cross chain event denoting the executation of cross chain tx is successful,
         // and this tx is coming from other public chains to current Ethereum network
