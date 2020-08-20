@@ -267,14 +267,27 @@ library ZeroCopySource {
         byte v;
         (v, offset) = NextByte(buff, offset);
 
+        uint value;
         if (v == 0xFD) {
-            return NextUint16(buff, offset);
+            // return NextUint16(buff, offset);
+            (value, offset) = NextUint16(buff, offset);
+            require(value >= 0xFD && value <= 0xFFFF, "NextUint16, value outside range");
+            return (value, offset);
         } else if (v == 0xFE) {
-            return NextUint32(buff, offset);
+            // return NextUint32(buff, offset);
+            (value, offset) = NextUint32(buff, offset);
+            require(value > 0xFFFF && value <= 0xFFFFFFFF, "NextVarUint, value outside range");
+            return (value, offset);
         } else if (v == 0xFF) {
-            return NextUint64(buff, offset);
+            // return NextUint64(buff, offset);
+            (value, offset) = NextUint64(buff, offset);
+            require(value > 0xFFFFFFFF, "NextVarUint, value outside range");
+            return (value, offset);
         } else{
-            return (uint8(v), offset);
+            // return (uint8(v), offset);
+            value = uint8(v);
+            require(value < 0xFD, "NextVarUint, value outside range");
+            return (value, offset);
         }
     }
 }
