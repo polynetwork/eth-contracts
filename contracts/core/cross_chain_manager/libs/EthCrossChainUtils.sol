@@ -6,13 +6,13 @@ library ECCUtils {
     struct Header {
         uint32 version;
         uint64 chainId;
+        uint32 timestamp;
+        uint32 height;
+        uint64 consensusData;
         bytes32 prevBlockHash;
         bytes32 transactionsRoot;
         bytes32 crossStatesRoot;
         bytes32 blockRoot;
-        uint32 timestamp;
-        uint32 height;
-        uint64 consensusData;
         bytes consensusPayload;
         bytes20 nextBookkeeper;
     }
