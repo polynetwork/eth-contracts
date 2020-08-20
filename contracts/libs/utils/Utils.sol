@@ -307,48 +307,4 @@ library Utils {
         assembly { codehash := extcodehash(account) }
         return (codehash != 0x0 && codehash != accountHash);
     }
-
-    /* @notice              In an ordered array,find closet the array
-    *                       index whose value closest to the target number.
-    *                       The height of the query must be greater than
-    *                       the height of the init genesis block height,
-    *                       other than it will return -1.
-    *  @param _arr          The array to retrieve
-    *  @param _len          the array length
-    *  @param _v            the target number
-    *  @return              the array index whose value closest to the target number.
-    */
-    function findBookKeeper(uint64[] memory _arr, uint64 _len, uint _v) internal pure returns (uint64, bool) {
-        require(_len != 0, "book keeper list cannot empty");
-        require(_arr.length == _len, "cannot partially query");
-        require(_v != 0, "block height must be positive");
-
-        uint64 left = 0;
-        uint64 right = _len - 1;
-
-        // if only one block height, just return index 0
-        if (_len == 1){
-            return (0, true);
-        }
-
-        while (left <= right){
-            uint64 middle = left + ((right - left) >> 1);
-
-            if(_arr[middle] == _v){
-                return (middle, true);
-            }
-
-            if(_arr[middle] < _v){
-			    left = middle + 1;
-            } else {
-                right = middle - 1;
-            }
-        }
-
-        if(left >= 1 && _arr[left - 1] < _v){
-            return (left - 1, true);
-        }
-
-        return (0, false);
-    }
 }
