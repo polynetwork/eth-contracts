@@ -58,7 +58,7 @@ contract ERC20Extended is Context, ERC20, ERC20Detailed {
     *  @param contractAddr  The specific contract address in bytes format in the target chain
     */
     function bindAssetHash(uint64 chainId, bytes memory contractAddr) onlyOperator public {
-        require(chainId >= 0, "chainId illegal!");
+        require(chainId != 0, "chainId illegal!");
         bondAssetHashes[chainId] = contractAddr;
         emit BindAssetHash(chainId, contractAddr);
     }

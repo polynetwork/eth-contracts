@@ -52,9 +52,9 @@ contract LockProxyPip1 is Context {
     }
 
     function delegateAsset(uint64 nativeChainId, bytes memory nativeLockProxy, bytes memory nativeAssetHash, uint256 delegatedSupply) public {
-        require(nativeChainId > 0, "nativeChainId cannot be zero");
-        require(nativeLockProxy.length > 0, "empty nativeLockProxy");
-        require(nativeAssetHash.length > 0, "empty nativeAssetHash");
+        require(nativeChainId != 0, "nativeChainId cannot be zero");
+        require(nativeLockProxy.length != 0, "empty nativeLockProxy");
+        require(nativeAssetHash.length != 0, "empty nativeAssetHash");
 
         address assetHash = _msgSender();
         bytes32 key = _getRegistryKey(assetHash, nativeChainId, nativeLockProxy, nativeAssetHash);
@@ -114,11 +114,11 @@ contract LockProxyPip1 is Context {
         payable
         returns (bool)
     {
-        require(toChainId > 0, "toChainId cannot be zero");
-        require(targetProxyHash.length > 0, "empty targetProxyHash");
-        require(toAssetHash.length > 0, "empty toAssetHash");
-        require(toAddress.length > 0, "empty toAddress");
-        require(amount > 0, "amount must be more than zero!");
+        require(toChainId != 0, "toChainId cannot be zero");
+        require(targetProxyHash.length != 0, "empty targetProxyHash");
+        require(toAssetHash.length != 0, "empty toAssetHash");
+        require(toAddress.length != 0, "empty toAddress");
+        require(amount != 0, "amount must be more than zero!");
 
         require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
 
@@ -134,8 +134,8 @@ contract LockProxyPip1 is Context {
             feeAddress: feeAddress
         });
 
-        if (feeAmount > 0 && deductFeeInLock) {
-            require(feeAddress.length > 0, "empty fee address");
+        if (feeAmount != 0 && deductFeeInLock) {
+            require(feeAddress.length != 0, "empty fee address");
             uint256 afterFeeAmount = amount.sub(feeAmount);
             require(_transferFromContract(fromAssetHash, Utils.bytesToAddress(feeAddress), feeAmount), "transfer asset from lock_proxy contract to feeAddress failed!");
 
@@ -176,7 +176,7 @@ contract LockProxyPip1 is Context {
         balances[key] = balances[key].sub(args.amount);
 
         uint256 afterFeeAmount = args.amount;
-        if (args.feeAmount > 0) {
+        if (args.feeAmount != 0) {
             afterFeeAmount = args.amount.sub(args.feeAmount);
             address feeAddress = Utils.bytesToAddress(args.feeAddress);
 

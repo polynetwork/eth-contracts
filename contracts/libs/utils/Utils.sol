@@ -25,7 +25,7 @@ library Utils {
             // load 32 bytes from memory starting from position _bs + 32
             value := mload(add(_bs, 0x20))
         }
-        require(value >= 0 && value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
     }
 
     /* @notice      Convert uint256 to bytes
@@ -33,7 +33,7 @@ library Utils {
     *  @return      bytes
     */
     function uint256ToBytes(uint256 _value) internal pure returns (bytes memory bs) {
-        require(_value >= 0 && _value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(_value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
         assembly {
             // Get a location of some free memory and store it in result as
             // Solidity does for memory variables.
@@ -319,9 +319,9 @@ library Utils {
     *  @return              the array index whose value closest to the target number.
     */
     function findBookKeeper(uint64[] memory _arr, uint64 _len, uint _v) internal pure returns (uint64, bool) {
-        require(_len > 0, "book keeper list cannot empty");
+        require(_len != 0, "book keeper list cannot empty");
         require(_arr.length == _len, "cannot partially query");
-        require(_v > 0, "block height must be positive");
+        require(_v != 0, "block height must be positive");
 
         uint64 left = 0;
         uint64 right = _len - 1;

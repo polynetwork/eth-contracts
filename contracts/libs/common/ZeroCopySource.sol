@@ -170,7 +170,7 @@ library ZeroCopySource {
             mstore(0x40, add(tmpbytes, byteLen))
             v := mload(tmpbytes)
         }
-        require(v >= 0 && v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
         return (v, offset + 32);
     }
     /* @notice              Read next variable bytes starting from offset,

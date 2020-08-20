@@ -141,7 +141,7 @@ library ZeroCopySink {
     *  @return          Converted bytes array
     */
     function WriteUint255(uint256 v) internal pure returns (bytes memory) {
-        require(v >= 0 && v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds uint255 range");
+        require(v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds uint255 range");
         bytes memory buff;
 
         assembly{

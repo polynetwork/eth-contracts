@@ -195,7 +195,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(success == true, "EthCrossChain call business contract failed");
         
         // Ensure the returned value is true
-        require(returnData.length > 0, "No return value from business contract!");
+        require(returnData.length != 0, "No return value from business contract!");
         (bool res,) = ZeroCopySource.NextBool(returnData, 31);
         require(res == true, "EthCrossChain call business contract return is not true");
         

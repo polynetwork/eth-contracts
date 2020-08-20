@@ -225,6 +225,10 @@ contract('ZeroCopySource', () => {
                 let param = ontUtils.reverseHex(web3.utils.padLeft(uint64_v_hex, hexCharacterAmount).slice(2));
                 bytes = bytes + param;
                 const result = await this.zeroCopySource.NextUint255.call('0x' + bytes, offset);
+                {
+                    const {receipt} = await this.zeroCopySource.NextUint255('0x' + bytes, offset);
+                    console.log("NextUint255(), gas:", receipt.gasUsed);
+                }
                 offset = offset + hexCharacterAmount / 2;
                 assert.equal(result[0].toString(), expected.toString());
                 // expect(result[0]).to.be.bignumber.equal(expected);
