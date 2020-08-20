@@ -33,7 +33,7 @@ library ZeroCopySink {
                 mstore(add(buff, 0x20), shl(248, 0x01))
                 // mstore8(add(buff, 0x20), 0x01)
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x21))
         }
         return buff;
     }
@@ -57,8 +57,8 @@ library ZeroCopySink {
             mstore(buff, 1)
             mstore(add(buff, 0x20), shl(248, v))
             // mstore(add(buff, 0x20), byte(0x1f, v))
-            mstore(0x40, add(buff, 0x40))
-        }    
+            mstore(0x40, add(buff, 0x21))
+        }
         return buff;
     }
 
@@ -82,7 +82,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x22))
         }
         return buff;
     }
@@ -106,7 +106,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x24))
         }
         return buff;
     }
@@ -131,7 +131,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x28))
         }
         return buff;
     }
