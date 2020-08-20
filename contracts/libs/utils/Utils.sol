@@ -271,7 +271,7 @@ library Utils {
     *  @return
     */
     function compressMCPubKey(bytes memory key) internal pure returns (bytes memory newkey) {
-        require(key.length >= 34, "key lenggh is too short");
+         require(key.length >= 67, "key lenggh is too short");
          newkey = slice(key, 0, 35);
          if (uint8(key[66]) % 2 == 0){
              newkey[2] = byte(0x02);

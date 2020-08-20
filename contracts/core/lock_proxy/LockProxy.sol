@@ -67,7 +67,7 @@ contract LockProxy is Context {
     /* @notice                  This function is meant to be invoked by the user,
     *                           a certin amount teokens will be locked in the proxy contract the invoker/msg.sender immediately.
     *                           Then the same amount of tokens will be unloked from target chain proxy contract at the target chain with chainId later.
-    *  @param fromAssetHash     The asset hash in current chain
+    *  @param fromAssetHash     The asset address in current chain, uniformly named as `fromAssetHash`
     *  @param toChainId         The target chain id
     *                           
     *  @param toAddress         The address in bytes format to receive same amount of tokens in target chain 
@@ -141,12 +141,15 @@ contract LockProxy is Context {
         }
     }
     function _transferToContract(address fromAssetHash, uint256 amount) internal returns (bool) {
-        if (fromAssetHash == address(0) && msg.value != 0) {
+        if (fromAssetHash == address(0)) {
             // fromAssetHash === address(0) denotes user choose to lock ether
             // passively check if the received msg.value equals amount
-            require(msg.value == amount, "transferred ether is not equal to amount!");
+            require(msg.value != 0, "transferred ether cannot be zero!");
+            require(msg.value == amount && msg.value != 0, "transferred ether is not equal to amount!");
         } else {
-            // actively transfer amount of asset from msg.sender to lock_proxy contract 
+            // make sure lockproxy contract will decline any received ether
+            require(msg.value == 0, "there should be no ether transfer!");
+            // actively transfer amount of asset from msg.sender to lock_proxy contract
             require(_transferERC20ToContract(fromAssetHash, _msgSender(), address(this), amount), "transfer erc20 asset to lock_proxy contract failed!");
         }
         return true;
