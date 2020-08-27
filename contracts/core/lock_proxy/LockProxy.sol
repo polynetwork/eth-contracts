@@ -145,7 +145,7 @@ contract LockProxy is Context {
             // fromAssetHash === address(0) denotes user choose to lock ether
             // passively check if the received msg.value equals amount
             require(msg.value != 0, "transferred ether cannot be zero!");
-            require(msg.value == amount && msg.value != 0, "transferred ether is not equal to amount!");
+            require(msg.value == amount, "transferred ether is not equal to amount!");
         } else {
             // make sure lockproxy contract will decline any received ether
             require(msg.value == 0, "there should be no ether transfer!");
