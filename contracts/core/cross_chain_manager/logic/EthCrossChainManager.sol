@@ -115,7 +115,6 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         emit CrossChainEvent(tx.origin, paramTxHash, msg.sender, toChainId, toContract, rawParam);
         return true;
     }
-
     /* @notice              Verify Poly chain header and proof, execute the cross chain tx from Poly chain to Ethereum
     *  @param proof         Poly chain tx merkle proof
     *  @param rawHeader     The header containing crossStateRoot to verify the above tx merkle proof
@@ -153,7 +152,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         bytes memory toMerkleValueBs = ECCUtils.merkleProve(proof, header.crossStatesRoot);
         
         // Parse the toMerkleValue struct and make sure the tx has not been processed, then mark this tx as processed
-        ECCUtils.ToMerkleValue memory toMerkleValue = ECCUtils.deserializMerkleValue(toMerkleValueBs);
+        ECCUtils.ToMerkleValue memory toMerkleValue = ECCUtils.deserializeMerkleValue(toMerkleValueBs);
         require(!eccd.checkIfFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "the transaction has been executed!");
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
@@ -194,7 +193,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(success == true, "EthCrossChain call business contract failed");
         
         // Ensure the returned value is true
-        require(returnData.length > 0, "No return value from business contract!");
+        require(returnData.length != 0, "No return value from business contract!");
         (bool res,) = ZeroCopySource.NextBool(returnData, 31);
         require(res == true, "EthCrossChain call business contract return is not true");
         

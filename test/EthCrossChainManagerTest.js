@@ -4,7 +4,7 @@ const EthCrossChainManager = artifacts.require('./../../contracts/core/.0/CrossC
 const EthCrossChainData = artifacts.require('./../../contracts/core/.0/CrossChainManager/data/EthCrossChainData');
 const EthCrossChainManagerProxy = artifacts.require('./../../contracts/core/.0/CrossChainManager/upgrade/EthCrossChainManagerProxy');
 const NewEthCrossChainManager = artifacts.require('./../../contracts/core/.0/CrossChainManager/logic/NewEthCrossChainManager');
-contract('EthCrossChain .0', (accounts) => {
+contract('EthCrossChain', (accounts) => {
 
     before(async function () {
         this.ECCD = await EthCrossChainData.new({ from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 10000000, gasPrice: 50 });
@@ -91,13 +91,16 @@ contract('EthCrossChain .0', (accounts) => {
         const signaturesx1 = '0x63fd63a8448a034a594c7e34034c0455628c3e879e6981e879b6f20ad1994f3e349d5021592a10908074d5ffc3d72384ee7dbfa7ad4b41388944c22dd3276bc701b046097a68620061598e5c59367f1faab18548ece6c8d6aca1572f95eee3915623eeba8a9c06a1886a16bd019f0d294fc1b204f273a32f4fcfcec994368827f00187206061136d01eb706c1950926d2986d20c3cc879977ccecbae6f8771dfc8873e9c269122575c7493a424f8cce1144e33115ed2402af40f141caf53fef4869500dc9caa49811f4d63c22752906cbfc03bf0bc646699cd82d143c349ab871bf6580102c40a38f4b9284865534dfb2059c100ae383e7f50c35f35eb7a768d4160890146487eb3f2ade194b48fb85df5c22e9a554d551375f23568e2f19f7d0b7021cf241b72890e4b12889480316e4a96404b36b9ef25d6337d947f8a9968577af554011c58c13bc05bff169897898d9c044e93006c8181e6231c1d7ab92b5bc45dd0242a65018cc843404e1e20f6748df88c48ba9a383a51c6493b0358153f0e2d78ca01'
         const blockHeightx1 = new web3.utils.BN('16734');
         it('verifyHeaderAndExecuteTx correctly', async function () {
-            const {logs} = await this.ECCM.verifyHeaderAndExecuteTx(proofx, blockHeaderx1, headerProofx, curRawHeader, signaturesx1);
+            const {receipt, logs} = await this.ECCM.verifyHeaderAndExecuteTx(proofx, blockHeaderx1, headerProofx, curRawHeader, signaturesx1);
             expectEvent.inLogs(logs, 'VerifyHeaderAndExecuteTxEvent', {
                 fromChainID: new web3.utils.BN('3'),
                 toContract: '0x4ddcf539d13e92d4151b7f5e607d4a09f725c47d',
                 crossChainTxHash:'0x00ca93f8738111a063d8ab7221f47c70a4cade0ca4a2829df494cd4b5e231bd6',
                 fromChainTxHash:'0x4caa77a3d2ddfaa318c550f1f38dd09d610dcff827d1f2ccd4ddcafaa6c553cc',
             });
+            console.log("receipt is ", receipt);
+            console.log("verifyHeaderAndExecuteTx gas:", receipt.gasUsed);
+          
         });
 
         it('verifyHeaderAndExecuteTx throws error on sync same block height header twice', async function () {
@@ -111,11 +114,13 @@ contract('EthCrossChain .0', (accounts) => {
         const sigList = '0x7d588d79ac9f0931c69150de6bfe5289f0147893781bffbcc32b5e07bd687d1048dda039ffc1e87de2e98610dc876e97411d604948473904b12b64bed8880bcc00ea8be33bb197c82690987e22e970221de11dfa019f470d784ef211edb6c9a3fd75bf74904adea08ed37a635c4dc58ccc21369afc1abcab4696a42be1097468a400289be668444122fd1d48c62781ded43e6fbda9bdd587dc7ee1bd326390d70e3f0e174fbd4854ed96c697dcee93feabbf7cdf290ebee93d4f5156d75d62b80ba301e79df9e679af49c403bbf05a24af2307adc96b641f4501fdb96e6704d27b2a87278e15bfee5909d4fa62dd45907cba23f833b3e96378d140d56722d1f59821e4006d8349493021e2cd6af96524357867b6be9d24ef33aaf66c430d5f91c33253304380ee17c6839fed964e7ba4910dd26533125b548cff6450140b10caec1b08fe01'
         const rawHeaderHeight = new web3.utils.BN('36432');
         it('changeBookKeeper correctly', async function () {
-            const {logs} = await this.ECCM.changeBookKeeper(rawHeader, pubKeyList, sigList);
+            const {receipt, logs} = await this.ECCM.changeBookKeeper(rawHeader, pubKeyList, sigList);
             expectEvent.inLogs(logs, 'ChangeBookKeeperEvent', {
                 height: rawHeaderHeight,
                 rawHeader: rawHeader,
             });
+            console.log("receipt is ", receipt);
+            console.log("changeBookKeeper gas:", receipt.gasUsed);
         });
 
         it('changeBookKeeper throws error on sync same block height header twice', async function () {

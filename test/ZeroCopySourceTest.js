@@ -30,12 +30,16 @@ contract('ZeroCopySource', () => {
         describe('NextBool', function () {
 
             it('NextBool read true correctly', async function () {
-                const result = await this.zeroCopySource.NextBool('0x01', 0);
+                const result = await this.zeroCopySource.NextBool.call('0x01', 0);
                 assert.equal(result[0], true);
                 assert.equal(result[1].toString(), '1');
+                {
+                    const {receipt} = await this.zeroCopySource.NextBool('0x01', 0);
+                    console.log("NextBool(), gas:", receipt.gasUsed);
+                }
             });
             it('NextBool read false correctly', async function () {
-                const result = await this.zeroCopySource.NextBool('0x0101010001', 3);
+                const result = await this.zeroCopySource.NextBool.call('0x0101010001', 3);
                 assert.equal(result[0], false);
                 assert.equal(result[1].toString(), '4');
             });
@@ -131,10 +135,15 @@ contract('ZeroCopySource', () => {
                 let param = ontUtils.reverseHex(web3.utils.padLeft(uint32_v_hex, hexCharacterAmount).slice(2));
                 bytes = bytes + param;
                 const result = await this.zeroCopySource.NextUint32.call('0x' + bytes, offset);
+                {
+                    const {receipt} = await this.zeroCopySource.NextUint32('0x' + bytes, offset);
+                    console.log("NextUint32(), gas:", receipt.gasUsed);
+                }
                 offset = offset + hexCharacterAmount / 2;
                 assert.equal(result[0].toString(), expected.toString());
                 // expect(result[0]).to.be.bignumber.equal(expected);
                 assert.equal(result[1].toString(), String(offset));
+                
                 
             });
             it('NextUint32(MAX_UINT_32 - 1) correctly ', async function () {
@@ -216,6 +225,10 @@ contract('ZeroCopySource', () => {
                 let param = ontUtils.reverseHex(web3.utils.padLeft(uint64_v_hex, hexCharacterAmount).slice(2));
                 bytes = bytes + param;
                 const result = await this.zeroCopySource.NextUint255.call('0x' + bytes, offset);
+                {
+                    const {receipt} = await this.zeroCopySource.NextUint255('0x' + bytes, offset);
+                    console.log("NextUint255(), gas:", receipt.gasUsed);
+                }
                 offset = offset + hexCharacterAmount / 2;
                 assert.equal(result[0].toString(), expected.toString());
                 // expect(result[0]).to.be.bignumber.equal(expected);

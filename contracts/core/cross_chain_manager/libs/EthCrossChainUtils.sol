@@ -6,13 +6,13 @@ library ECCUtils {
     struct Header {
         uint32 version;
         uint64 chainId;
+        uint32 timestamp;
+        uint32 height;
+        uint64 consensusData;
         bytes32 prevBlockHash;
         bytes32 transactionsRoot;
         bytes32 crossStatesRoot;
         bytes32 blockRoot;
-        uint32 timestamp;
-        uint32 height;
-        uint64 consensusData;
         bytes consensusPayload;
         bytes20 nextBookkeeper;
     }
@@ -47,7 +47,7 @@ library ECCUtils {
         (value, off)  = ZeroCopySource.NextVarBytes(_auditPath, off);
 
         bytes32 hash = Utils.hashLeaf(value);
-        uint size = (_auditPath.length - off) / 32;
+        uint size = (_auditPath.length - off) / 33;
         bytes32 nodeHash;
         byte pos;
         for (uint i = 0; i < size; i++) {
@@ -72,14 +72,15 @@ library ECCUtils {
     *  @return              two element: next book keeper, consensus node signer addresses
     */
     function _getBookKeeper(uint _keyLen, uint _m, bytes memory _pubKeyList) internal pure returns (bytes20, address[] memory){
-         bytes memory buff ;
-         buff = abi.encodePacked(buff, ZeroCopySink.WriteUint16(uint16(_keyLen)));
-
+         bytes memory buff;
+         buff = ZeroCopySink.WriteUint16(uint16(_keyLen));
          address[] memory keepers = new address[](_keyLen);
-
+         bytes32 hash;
+         bytes memory publicKey;
          for(uint i = 0; i < _keyLen; i++){
-             buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN))));
-             bytes32 hash = keccak256(Utils.slice(Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN), 3, 64));
+             publicKey = Utils.slice(_pubKeyList, i*POLYCHAIN_PUBKEY_LEN, POLYCHAIN_PUBKEY_LEN);
+             buff =  abi.encodePacked(buff, ZeroCopySink.WriteVarBytes(Utils.compressMCPubKey(publicKey)));
+             hash = keccak256(Utils.slice(publicKey, 3, 64));
              keepers[i] = address(uint160(uint256(hash)));
          }
 
@@ -96,6 +97,7 @@ library ECCUtils {
     function verifyPubkey(bytes memory _pubKeyList) internal pure returns (bytes20, address[] memory) {
         require(_pubKeyList.length % POLYCHAIN_PUBKEY_LEN == 0, "_pubKeyList length illegal!");
         uint n = _pubKeyList.length / POLYCHAIN_PUBKEY_LEN;
+        require(n >= 1, "too short _pubKeyList!");
         return _getBookKeeper(n, n - (n - 1) / 3, _pubKeyList);
     }
 
@@ -111,19 +113,20 @@ library ECCUtils {
 
         uint signed = 0;
         uint sigCount = _sigList.length / POLYCHAIN_SIGNATURE_LEN;
+        address[] memory signers = new address[](sigCount);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
         for(uint j = 0; j  < sigCount; j++){
-            bytes32 r = Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN, 32));
-            bytes32 s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
-            uint8 v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
-
-            address signer =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
-            if (Utils.containsAddress(_keepers, signer)){
-                signed += 1;
-            }
+            r = Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN, 32));
+            s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
+            v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
+            signers[j] =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
         }
-        return signed >= _m;
+        return Utils.containMAddresses(_keepers, signers, _m);
     }
     
+
     /* @notice               Serialize Poly chain book keepers' info in Ethereum addresses format into raw bytes
     *  @param keepersBytes   The serialized addresses
     *  @return               serialized bytes result
@@ -158,7 +161,7 @@ library ECCUtils {
     *  @param _valueBs       Poly chain transaction raw bytes
     *  @return               ToMerkleValue struct
     */
-    function deserializMerkleValue(bytes memory _valueBs) internal pure returns (ToMerkleValue memory) {
+    function deserializeMerkleValue(bytes memory _valueBs) internal pure returns (ToMerkleValue memory) {
         ToMerkleValue memory toMerkleValue;
         uint256 off = 0;
 

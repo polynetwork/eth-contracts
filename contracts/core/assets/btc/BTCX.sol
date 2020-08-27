@@ -33,8 +33,8 @@ contract BTCX is ERC20Extended {
     *  @param fromChainId       The source chain id
     */
     function unlock(bytes memory argsBs, bytes memory fromContractAddr, uint64 fromChainId) onlyManagerContract public returns (bool) {
-        TxArgs memory args = _deserializTxArgs(argsBs);
-        require(fromContractAddr.length > 0, "from asset contract address cannot be empty");
+        TxArgs memory args = _deserializeTxArgs(argsBs);
+        require(fromContractAddr.length != 0, "from asset contract address cannot be empty");
         require(Utils.equalStorage(bondAssetHashes[fromChainId], fromContractAddr), "From contract address error!");
         
         address toAddress = Utils.bytesToAddress(args.toAddress);
@@ -100,7 +100,7 @@ contract BTCX is ERC20Extended {
         return buff;
     }
 
-    function _deserializTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
+    function _deserializeTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
         TxArgs memory args;
         uint256 off = 0;
         (args.toAddress, off) = ZeroCopySource.NextVarBytes(valueBs, off);

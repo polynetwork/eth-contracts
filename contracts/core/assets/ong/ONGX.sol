@@ -6,7 +6,7 @@ import "./../../../libs/token/ERC20/ERC20.sol";
 
 contract ONGX is Context, ERC20, ERC20Detailed {
     
-    constructor (address proxyContractAddress) public ERC20Detailed("ONG Token", "ONGX", 9) {
+    constructor (address proxyContractAddress) public ERC20Detailed("Ontology Gas", "xONG", 9) {
         _mint(proxyContractAddress, 1000000000000000000);
     }
 }

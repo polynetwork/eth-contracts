@@ -67,20 +67,20 @@ contract LockProxy is Context {
     /* @notice                  This function is meant to be invoked by the user,
     *                           a certin amount teokens will be locked in the proxy contract the invoker/msg.sender immediately.
     *                           Then the same amount of tokens will be unloked from target chain proxy contract at the target chain with chainId later.
-    *  @param fromAssetHash     The asset hash in current chain
+    *  @param fromAssetHash     The asset address in current chain, uniformly named as `fromAssetHash`
     *  @param toChainId         The target chain id
     *                           
     *  @param toAddress         The address in bytes format to receive same amount of tokens in target chain 
     *  @param amount            The amount of tokens to be crossed from ethereum to the chain with chainId
     */
     function lock(address fromAssetHash, uint64 toChainId, bytes memory toAddress, uint256 amount) public payable returns (bool) {
-        require(amount >= 0, "amount is less than zero!");
+        require(amount != 0, "amount is less than zero!");
         
         
         require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
         
         bytes memory toAssetHash = assetHashMap[fromAssetHash][toChainId];
-        require(toAssetHash.length > 0, "empty illegal toAssetHash");
+        require(toAssetHash.length != 0, "empty illegal toAssetHash");
 
         TxArgs memory txArgs = TxArgs({
             toAssetHash: toAssetHash,
@@ -94,7 +94,7 @@ contract LockProxy is Context {
         IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
         
         bytes memory toProxyHash = proxyHashMap[toChainId];
-        require(toProxyHash.length > 0, "empty illegal toProxyHash");
+        require(toProxyHash.length != 0, "empty illegal toProxyHash");
         require(eccm.crossChain(toChainId, toProxyHash, "unlock", txData), "EthCrossChainManager crossChain executed error!");
 
         emit LockEvent(fromAssetHash, _msgSender(), toChainId, toAssetHash, toAddress, amount);
@@ -112,15 +112,15 @@ contract LockProxy is Context {
     // *  @param fromChainId       The source chain id
     // */
     function unlock(bytes memory argsBs, bytes memory fromContractAddr, uint64 fromChainId) onlyManagerContract public returns (bool) {
-        TxArgs memory args = _deserializTxArgs(argsBs);
+        TxArgs memory args = _deserializeTxArgs(argsBs);
 
-        require(fromContractAddr.length > 0, "from proxy contract address cannot be empty");
+        require(fromContractAddr.length != 0, "from proxy contract address cannot be empty");
         require(Utils.equalStorage(proxyHashMap[fromChainId], fromContractAddr), "From Proxy contract address error!");
         
-        require(args.toAssetHash.length > 0, "toAssetHash cannot be empty");
+        require(args.toAssetHash.length != 0, "toAssetHash cannot be empty");
         address toAssetHash = Utils.bytesToAddress(args.toAssetHash);
 
-        require(args.toAddress.length > 0, "toAddress cannot be empty");
+        require(args.toAddress.length != 0, "toAddress cannot be empty");
         address toAddress = Utils.bytesToAddress(args.toAddress);
         
         
@@ -141,12 +141,15 @@ contract LockProxy is Context {
         }
     }
     function _transferToContract(address fromAssetHash, uint256 amount) internal returns (bool) {
-        if (fromAssetHash == address(0) && msg.value > 0) {
+        if (fromAssetHash == address(0)) {
             // fromAssetHash === address(0) denotes user choose to lock ether
             // passively check if the received msg.value equals amount
+            require(msg.value != 0, "transferred ether cannot be zero!");
             require(msg.value == amount, "transferred ether is not equal to amount!");
         } else {
-            // actively transfer amount of asset from msg.sender to lock_proxy contract 
+            // make sure lockproxy contract will decline any received ether
+            require(msg.value == 0, "there should be no ether transfer!");
+            // actively transfer amount of asset from msg.sender to lock_proxy contract
             require(_transferERC20ToContract(fromAssetHash, _msgSender(), address(this), amount), "transfer erc20 asset to lock_proxy contract failed!");
         }
         return true;
@@ -185,7 +188,7 @@ contract LockProxy is Context {
         return buff;
     }
 
-    function _deserializTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
+    function _deserializeTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
         TxArgs memory args;
         uint256 off = 0;
         (args.toAssetHash, off) = ZeroCopySource.NextVarBytes(valueBs, off);

@@ -1,17 +1,18 @@
 pragma solidity ^0.5.0;
 
 /**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
+ * @dev Wrappers over encoding and serialization operation into bytes from bassic types in Solidity for PolyNetwork cross chain utility.
  *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
+ * Encode basic types in Solidity into bytes easily. It's designed to be used 
+ * for PolyNetwork cross chain application, and the encoding rules on Ethereum chain 
+ * and the decoding rules on other chains should be consistent. Here we  
+ * follow the underlying serialization rule with implementation found here: 
+ * https://github.com/polynetwork/poly/blob/master/common/zero_copy_sink.go
  *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
+ * Using this library instead of the unchecked serialization method can help reduce
+ * the risk of serious bugs and handfule, so it's recommended to use it.
+ *
+ * Please note that risk can be minimized, yet not eliminated.
  */
 library ZeroCopySink {
     /* @notice          Convert boolean value into bytes
@@ -32,7 +33,7 @@ library ZeroCopySink {
                 mstore(add(buff, 0x20), shl(248, 0x01))
                 // mstore8(add(buff, 0x20), 0x01)
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x21))
         }
         return buff;
     }
@@ -56,8 +57,8 @@ library ZeroCopySink {
             mstore(buff, 1)
             mstore(add(buff, 0x20), shl(248, v))
             // mstore(add(buff, 0x20), byte(0x1f, v))
-            mstore(0x40, add(buff, 0x40))
-        }    
+            mstore(0x40, add(buff, 0x21))
+        }
         return buff;
     }
 
@@ -81,7 +82,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x22))
         }
         return buff;
     }
@@ -105,7 +106,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x24))
         }
         return buff;
     }
@@ -130,7 +131,7 @@ library ZeroCopySink {
             }{
                 mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
             }
-            mstore(0x40, add(buff, 0x40))
+            mstore(0x40, add(buff, 0x28))
         }
         return buff;
     }
@@ -140,7 +141,7 @@ library ZeroCopySink {
     *  @return          Converted bytes array
     */
     function WriteUint255(uint256 v) internal pure returns (bytes memory) {
-        require(v >= 0 && v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds uint255 range");
+        require(v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds uint255 range");
         bytes memory buff;
 
         assembly{
@@ -180,22 +181,5 @@ library ZeroCopySink {
     	} else {
     		return abi.encodePacked(WriteByte(0xFF), WriteUint64(uint64(v)));
     	}
-    }
-
-    // TO Be Checked
-    function WriteInt8(int8 v) internal pure returns (bytes memory) {
-        return WriteUint8(uint8(v));
-    }
-
-    function WriteInt16(int16 v) internal pure returns (bytes memory){
-        return WriteUint16(uint16(v));
-    }
-
-    function WriteInt32(int32 v) internal pure returns (bytes memory) {
-        return WriteUint32(uint32(v));
-    }
-
-    function WriteInt64(int64 v) internal pure returns (bytes memory) {
-        return WriteUint64(uint64(v));
     }
 }

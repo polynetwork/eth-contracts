@@ -1,17 +1,18 @@
 pragma solidity ^0.5.0;
 
 /**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
+ * @dev Wrappers over decoding and deserialization operation from bytes into bassic types in Solidity for PolyNetwork cross chain utility.
  *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
+ * Decode into basic types in Solidity from bytes easily. It's designed to be used 
+ * for PolyNetwork cross chain application, and the decoding rules on Ethereum chain 
+ * and the encoding rule on other chains should be consistent, and . Here we
+ * follow the underlying deserialization rule with implementation found here: 
+ * https://github.com/polynetwork/poly/blob/master/common/zero_copy_source.go
  *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
+ * Using this library instead of the unchecked serialization method can help reduce
+ * the risk of serious bugs and handfule, so it's recommended to use it.
+ *
+ * Please note that risk can be minimized, yet not eliminated.
  */
 library ZeroCopySource {
     /* @notice              Read next byte as boolean type starting at offset from buff
@@ -20,7 +21,7 @@ library ZeroCopySource {
     *  @return              The the read boolean value and new offset
     */
     function NextBool(bytes memory buff, uint256 offset) internal pure returns(bool, uint256) {
-        require(offset + 1 <= buff.length, "Offset exceeds limit");
+        require(offset + 1 <= buff.length && offset < offset + 1, "Offset exceeds limit");
         // byte === bytes1
         byte v;
         assembly{
@@ -43,7 +44,7 @@ library ZeroCopySource {
     *  @return              The read byte value and new offset
     */
     function NextByte(bytes memory buff, uint256 offset) internal pure returns (byte, uint256) {
-        require(offset + 1 <= buff.length, "NextByte, Offset exceeds maximum");
+        require(offset + 1 <= buff.length && offset < offset + 1, "NextByte, Offset exceeds maximum");
         byte v;
         assembly{
             v := mload(add(add(buff, 0x20), offset))
@@ -57,7 +58,7 @@ library ZeroCopySource {
     *  @return              The read uint8 value and new offset
     */
     function NextUint8(bytes memory buff, uint256 offset) internal pure returns (uint8, uint256) {
-        require(offset + 1 <= buff.length, "NextUint8, Offset exceeds maximum");
+        require(offset + 1 <= buff.length && offset < offset + 1, "NextUint8, Offset exceeds maximum");
         uint8 v;
         assembly{
             let tmpbytes := mload(0x40)
@@ -75,7 +76,7 @@ library ZeroCopySource {
     *  @return              The read uint16 value and updated offset
     */
     function NextUint16(bytes memory buff, uint256 offset) internal pure returns (uint16, uint256) {
-        require(offset + 2 <= buff.length, "NextUint16, offset exceeds maximum");
+        require(offset + 2 <= buff.length && offset < offset + 2, "NextUint16, offset exceeds maximum");
         
         uint16 v;
         assembly {
@@ -96,7 +97,7 @@ library ZeroCopySource {
     *  @return              The read uint32 value and updated offset
     */
     function NextUint32(bytes memory buff, uint256 offset) internal pure returns (uint32, uint256) {
-        require(offset + 4 <= buff.length, "NextUint32, offset exceeds maximum");
+        require(offset + 4 <= buff.length && offset < offset + 4, "NextUint32, offset exceeds maximum");
         uint32 v;
         assembly {
             let tmpbytes := mload(0x40)
@@ -123,7 +124,7 @@ library ZeroCopySource {
     *  @return              The read uint64 value and updated offset
     */
     function NextUint64(bytes memory buff, uint256 offset) internal pure returns (uint64, uint256) {
-        require(offset + 8 <= buff.length, "NextUint64, offset exceeds maximum");
+        require(offset + 8 <= buff.length && offset < offset + 8, "NextUint64, offset exceeds maximum");
         uint64 v;
         assembly {
             let tmpbytes := mload(0x40)
@@ -151,7 +152,7 @@ library ZeroCopySource {
     *  @return              The read uint256 value and updated offset
     */
     function NextUint255(bytes memory buff, uint256 offset) internal pure returns (uint256, uint256) {
-        require(offset + 32 <= buff.length, "NextUint255, offset exceeds maximum");
+        require(offset + 32 <= buff.length && offset < offset + 32, "NextUint255, offset exceeds maximum");
         uint256 v;
         assembly {
             let tmpbytes := mload(0x40)
@@ -169,7 +170,7 @@ library ZeroCopySource {
             mstore(0x40, add(tmpbytes, byteLen))
             v := mload(tmpbytes)
         }
-        require(v >= 0 && v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
         return (v, offset + 32);
     }
     /* @notice              Read next variable bytes starting from offset,
@@ -181,7 +182,7 @@ library ZeroCopySource {
     function NextVarBytes(bytes memory buff, uint256 offset) internal pure returns(bytes memory, uint256) {
         uint len;
         (len, offset) = NextVarUint(buff, offset);
-        require(offset + len <= buff.length, "NextVarBytes, offset exceeds maximum");
+        require(offset + len <= buff.length && offset < offset + len, "NextVarBytes, offset exceeds maximum");
         bytes memory tempBytes;
         assembly{
             switch iszero(len)
@@ -240,7 +241,7 @@ library ZeroCopySource {
     *  @return              The read bytes32 value and updated offset
     */
     function NextHash(bytes memory buff, uint256 offset) internal pure returns (bytes32 , uint256) {
-        require(offset + 32 <= buff.length, "NextHash, offset exceeds maximum");
+        require(offset + 32 <= buff.length && offset < offset + 32, "NextHash, offset exceeds maximum");
         bytes32 v;
         assembly {
             v := mload(add(buff, add(offset, 0x20)))
@@ -254,7 +255,7 @@ library ZeroCopySource {
     *  @return              The read bytes20 value and updated offset
     */
     function NextBytes20(bytes memory buff, uint256 offset) internal pure returns (bytes20 , uint256) {
-        require(offset + 20 <= buff.length, "NextBytes20, offset exceeds maximum");
+        require(offset + 20 <= buff.length && offset < offset + 20, "NextBytes20, offset exceeds maximum");
         bytes20 v;
         assembly {
             v := mload(add(buff, add(offset, 0x20)))
@@ -266,14 +267,27 @@ library ZeroCopySource {
         byte v;
         (v, offset) = NextByte(buff, offset);
 
+        uint value;
         if (v == 0xFD) {
-            return NextUint16(buff, offset);
+            // return NextUint16(buff, offset);
+            (value, offset) = NextUint16(buff, offset);
+            require(value >= 0xFD && value <= 0xFFFF, "NextUint16, value outside range");
+            return (value, offset);
         } else if (v == 0xFE) {
-            return NextUint32(buff, offset);
+            // return NextUint32(buff, offset);
+            (value, offset) = NextUint32(buff, offset);
+            require(value > 0xFFFF && value <= 0xFFFFFFFF, "NextVarUint, value outside range");
+            return (value, offset);
         } else if (v == 0xFF) {
-            return NextUint64(buff, offset);
+            // return NextUint64(buff, offset);
+            (value, offset) = NextUint64(buff, offset);
+            require(value > 0xFFFFFFFF, "NextVarUint, value outside range");
+            return (value, offset);
         } else{
-            return (uint8(v), offset);
+            // return (uint8(v), offset);
+            value = uint8(v);
+            require(value < 0xFD, "NextVarUint, value outside range");
+            return (value, offset);
         }
     }
 }

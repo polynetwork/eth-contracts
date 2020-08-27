@@ -17,11 +17,20 @@ contract('ZeroCopySink', () => {
             t = '0x01';
             f = '0x00';
 
-            const b1 = await this.zeroCopy.WriteBool(true);
+            const b1 = await this.zeroCopy.WriteBool.call(true);
             assert.equal(b1, t);
-
-            const b2 = await this.zeroCopy.WriteBool(false);
+            {
+                const {receipt} = await this.zeroCopy.WriteBool(true);
+                console.log("WriteBool(true) gas:", receipt.gasUsed);
+            }
+            
+            
+            const b2 = await this.zeroCopy.WriteBool.call(false);
             assert.equal(b2, f);
+            {
+                const {receipt} = await this.zeroCopy.WriteBool(false);
+                console.log("WriteBool(false) gas:", receipt.gasUsed);
+            }
         });
 
     });
@@ -30,13 +39,18 @@ contract('ZeroCopySink', () => {
 
         it('WriteByte correctly', async function () {
             b = web3.utils.numberToHex(128);
-            bs = await this.zeroCopy.WriteByte(b);
+            let bs = await this.zeroCopy.WriteByte.call(b);
             assert.equal(b, bs);
+            {
+                const {receipt} = await this.zeroCopy.WriteByte(b);
+                console.log("WriteByte(", b, ") gas:", receipt.gasUsed);
+            }
+
         });
 
         it('WriteByte throws error on byte number greater than 2 ** 8', async function () {
             b = web3.utils.numberToHex(256);
-            const bs = await this.zeroCopy.WriteByte(b);
+            const bs = await this.zeroCopy.WriteByte.call(b);
             assert.notEqual(b, bs);
         });
 
@@ -53,6 +67,10 @@ contract('ZeroCopySink', () => {
             let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint8_v_hex, hexCharacterAmount).slice(2));
             const result = await this.zeroCopy.WriteUint8.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteUint8(num);
+                console.log("WriteUint8(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteUint8(MAX_UINT_8 - 1) correctly ', async function () {
             let num = MAX_UINT_8.sub(new web3.utils.BN('1'));
@@ -95,6 +113,10 @@ contract('ZeroCopySink', () => {
             let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint16_v_hex, hexCharacterAmount).slice(2));
             const result = await this.zeroCopy.WriteUint16.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteUint16(num);
+                console.log("WriteUint16(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteUint16(MAX_UINT_16 - 1) correctly ', async function () {
             let num = MAX_UINT_16.sub(new web3.utils.BN('1'));
@@ -139,6 +161,10 @@ contract('ZeroCopySink', () => {
             let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint32_v_hex, hexCharacterAmount).slice(2));
             const result = await this.zeroCopy.WriteUint32.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteUint32(num);
+                console.log("WriteUint32(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteUint32(MAX_UINT_32 - 1) correctly ', async function () {
             let num = MAX_UINT_32.sub(new web3.utils.BN('1'));
@@ -181,6 +207,10 @@ contract('ZeroCopySink', () => {
             let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint64_v_hex, hexCharacterAmount).slice(2));
             const result = await this.zeroCopy.WriteUint64.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteUint64(num);
+                console.log("WriteUint64(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteUint64(MAX_UINT_64 - 1) correctly ', async function () {
             let num = MAX_UINT_64.sub(new web3.utils.BN('1'));
@@ -218,11 +248,15 @@ contract('ZeroCopySink', () => {
         expect(MAX_UINT_255).to.be.bignumber.equal(new BN('2').pow(new BN('255')).sub(new BN('1')));
         const hexCharacterAmount = 64;
         it('WriteUint255(MAX_UINT_255) correctly', async function () {
-            let uint256_v = MAX_UINT_255;
-            let uint256_v_hex = web3.utils.toHex(uint256_v);
-            let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint256_v_hex, hexCharacterAmount).slice(2));
-            let result = await this.zeroCopy.WriteUint255.call(uint256_v);
+            let uint255_v = MAX_UINT_255;
+            let uint255_v_hex = web3.utils.toHex(uint255_v);
+            let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(uint255_v_hex, hexCharacterAmount).slice(2));
+            let result = await this.zeroCopy.WriteUint255.call(uint255_v);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteUint255(uint255_v);
+                console.log("WriteUint255(", uint255_v.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteUint255(MAX_UINT_255 - 1) correctly', async function () {
             let uint256_v = MAX_UINT_255.sub(new web3.utils.BN('1'));
@@ -256,6 +290,10 @@ contract('ZeroCopySink', () => {
             let expected = '0x' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 2).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint value == 0xFD === 253', async function() {
             let num = 0xfd;
@@ -263,6 +301,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xfd' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 4).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint 0xFD <= value == 1000 <= 0xFFFF', async function() {
             let num = 1000;
@@ -270,6 +312,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xfd' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 4).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint 0xFD <= value == 0xFFFF <= 0xFFFF', async function() {
             let num = 0xFFFF;
@@ -277,6 +323,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xfd' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 4).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint 0xFFFF < value == 655360 <= 0xFFFFFFFF', async function() {
             let num = 655360;
@@ -284,6 +334,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xfe' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 8).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint 0xFFFF < value == 0xFFFFFFFF <= 0xFFFFFFFF', async function() {
             let num = 0xFFFFFFFF;
@@ -291,6 +345,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xfe' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 8).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
         it('WriteVarUint 0xFFFF < value == 0xFFFFFFFF <= 0xFFFFFFFF', async function() {
             let num = 42949672950;
@@ -298,6 +356,10 @@ contract('ZeroCopySink', () => {
             let expected = '0xff' + ontUtils.reverseHex(web3.utils.padLeft(num_hex, 16).slice(2));
             const result = await this.zeroCopy.WriteVarUint.call(num);
             assert.equal(result, expected);
+            {
+                const {receipt} = await this.zeroCopy.WriteVarUint(num);
+                console.log("WriteVarUint(", num.toString(), ") gas:", receipt.gasUsed);
+            }
         });
     });
     describe('WriteVarBytes', function () {
@@ -314,79 +376,99 @@ contract('ZeroCopySink', () => {
             const padByteLen = 1;
             it('WriteVarBytes length < 0xFD correctly', async function () {
                 const str = str_11;
-                let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+                const input = web3.utils.hexToBytes(str);
+                let result = await this.zeroCopy.WriteVarBytes.call(input);
                 let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
                 let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
                 let expected = '0x' + reversedLenHex + str.slice(2);
                 assert.equal(result, expected);
+                {
+                    const {receipt} = await this.zeroCopy.WriteVarBytes(input);
+                    console.log("WriteVarBytes(", str, ") gas:", receipt.gasUsed);
+                }
             });
         });
         describe('WriteVarBytes 0xFD <= length < 0xFFFF', async function () {
             const padByteLen = 2;
             it('WriteVarBytes length == 0xFD correctly', async function () {
                 const str = str_253;
-                let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+                const input = web3.utils.hexToBytes(str);
+                let result = await this.zeroCopy.WriteVarBytes.call(input);
                 let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
                 let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
                 let expected = '0xfd' + reversedLenHex + str.slice(2);
                 assert.equal(result, expected);
+                {
+                    const {receipt} = await this.zeroCopy.WriteVarBytes(input);
+                    console.log("WriteVarBytes(", str, ") gas:", receipt.gasUsed);
+                }
             });
             it('WriteVarBytes 0xFD < length < 0xFFFF correctly', async function () {
                 const str = str_325;
-                let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+                const input = web3.utils.hexToBytes(str);
+                let result = await this.zeroCopy.WriteVarBytes.call(input);
                 let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
                 let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
                 let expected = '0xfd' + reversedLenHex + str.slice(2);
                 assert.equal(result, expected);
+                {
+                    const {receipt} = await this.zeroCopy.WriteVarBytes(input);
+                    console.log("WriteVarBytes(", str, ") gas:", receipt.gasUsed);
+                }
             });
             it('WriteVarBytes 0xFD < length = 10000 < 0xFFFF correctly', async function () {
                 const str = str_10000;
-                let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+                const input = web3.utils.hexToBytes(str);
+                let result = await this.zeroCopy.WriteVarBytes.call(input);
                 let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
                 let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
                 let expected = '0xfd' + reversedLenHex + str.slice(2);
                 assert.equal(result, expected);
+                {
+                    const {receipt} = await this.zeroCopy.WriteVarBytes(input);
+                    console.log("WriteVarBytes(", str, ") gas:", receipt.gasUsed);
+                }
             });
         });
-        describe('WriteVarBytes 0xFFFF <= length < 0xFFFFFFFF', async function () {
-            const padByteLen = 4;
-            // it('WriteVarBytes length == 0xFFFF correctly', async function () {
-            //     const str = str_16776960;
-            //     let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
-            //     let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
-            //     let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
-            //     let expected = '0xfe' + reversedLenHex + str.slice(2);
-            //     assert.equal(result, expected);
-            // });
-            // //  the following would have error:  Requested too many random bytes
-            // it('WriteVarBytes 0xFFFF < length < 0xFFFFFFFF correctly', async function () {
-            //     const str = str_4294905600;
-            //     let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
-            //     let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
-            //     let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
-            //     let expected = '0xfe' + reversedLenHex + str.slice(2);
-            //     assert.equal(result, expected);
-            // });
-            // it('WriteVarBytes length == 0xFFFFFFFF correctly', async function () {
-            //     const str = str_1099511627520;
-            //     let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
-            //     let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
-            //     let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
-            //     let expected = '0xfe' + reversedLenHex + str.slice(2);
-            //     assert.equal(result, expected);
-            // });
-        });
-        describe('WriteVarBytes length > 0xFFFFFFFF', async function () {
-            // it('WriteVarBytes length > 0xFFFFFFFF correctly', async function () {
-            //     const str = str_1099511627521;
-            //     const padByteLen = 8;
-            //     let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
-            //     let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
-            //     let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
-            //     let expected = '0xff' + reversedLenHex + str.slice(2);
-            //     assert.equal(result, expected);
-            // });
-        });
+        // describe('WriteVarBytes 0xFFFF <= length < 0xFFFFFFFF', async function () {
+        //     const padByteLen = 4;
+        //     it('WriteVarBytes length == 0xFFFF correctly', async function () {
+        //         const str = str_16776960;
+        //         let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+        //         let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
+        //         let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
+        //         let expected = '0xfe' + reversedLenHex + str.slice(2);
+        //         assert.equal(result, expected);
+        //     });
+        //     //  the following would have error:  Requested too many random bytes
+        //     it('WriteVarBytes 0xFFFF < length < 0xFFFFFFFF correctly', async function () {
+        //         const str = str_4294905600;
+        //         let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+        //         let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
+        //         let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
+        //         let expected = '0xfe' + reversedLenHex + str.slice(2);
+        //         assert.equal(result, expected);
+        //     });
+        //     it('WriteVarBytes length == 0xFFFFFFFF correctly', async function () {
+        //         const str = str_1099511627520;
+        //         let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+        //         let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
+        //         let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
+        //         let expected = '0xfe' + reversedLenHex + str.slice(2);
+        //         assert.equal(result, expected);
+        //     });
+        // });
+        // describe('WriteVarBytes length > 0xFFFFFFFF', async function () {
+        //     it('WriteVarBytes length > 0xFFFFFFFF correctly', async function () {
+        //         const str = str_1099511627521;
+        //         const padByteLen = 8;
+        //         let result = await this.zeroCopy.WriteVarBytes(web3.utils.hexToBytes(str));
+        //         let lenHex = web3.utils.padLeft(web3.utils.numberToHex((str.length - 2) / 2), padByteLen * 2);
+        //         let reversedLenHex = ontUtils.reverseHex(lenHex.slice(2));
+        //         let expected = '0xff' + reversedLenHex + str.slice(2);
+        //         assert.equal(result, expected);
+        //     });
+        // });
     });
 
 });

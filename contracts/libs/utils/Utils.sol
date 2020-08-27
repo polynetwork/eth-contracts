@@ -25,7 +25,7 @@ library Utils {
             // load 32 bytes from memory starting from position _bs + 32
             value := mload(add(_bs, 0x20))
         }
-        require(value >= 0 && value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
     }
 
     /* @notice      Convert uint256 to bytes
@@ -33,7 +33,7 @@ library Utils {
     *  @return      bytes
     */
     function uint256ToBytes(uint256 _value) internal pure returns (bytes memory bs) {
-        require(_value >= 0 && _value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
+        require(_value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
         assembly {
             // Get a location of some free memory and store it in result as
             // Solidity does for memory variables.
@@ -247,20 +247,23 @@ library Utils {
 
         return tempBytes;
     }
-
-    /* @notice              Decide if _addrArray contains _addr
-    *  @param _addrArray    The array consist of serveral address
-    *  @param _addr         The specific address to be looked into
+    /* @notice              Check if the elements number of _signers within _keepers array is no less than _m
+    *  @param _keepers      The array consists of serveral address
+    *  @param _signers      Some specific addresses to be looked into
+    *  @param _m            The number requirement paramter
     *  @return              True means containment, false meansdo do not contain.
     */
-    function containsAddress(address[] memory _addrArray, address _addr) internal pure returns (bool exist){
-        exist = false;
-        for(uint i = 0; i < _addrArray.length; i++){
-            if (_addr == _addrArray[i]){
-                exist = true;
-                break;
+    function containMAddresses(address[] memory _keepers, address[] memory _signers, uint _m) internal pure returns (bool){
+        uint m = 0;
+        for(uint i = 0; i < _signers.length; i++){
+            for (uint j = 0; j < _keepers.length; j++) {
+                if (_signers[i] == _keepers[j]) {
+                    m++;
+                    delete _keepers[j];
+                }
             }
         }
+        return m >= _m;
     }
 
     /* @notice              TODO
@@ -268,7 +271,7 @@ library Utils {
     *  @return
     */
     function compressMCPubKey(bytes memory key) internal pure returns (bytes memory newkey) {
-        require(key.length >= 34, "key lenggh is too short");
+         require(key.length >= 67, "key lenggh is too short");
          newkey = slice(key, 0, 35);
          if (uint8(key[66]) % 2 == 0){
              newkey[2] = byte(0x02);
@@ -303,49 +306,5 @@ library Utils {
         // solhint-disable-next-line no-inline-assembly
         assembly { codehash := extcodehash(account) }
         return (codehash != 0x0 && codehash != accountHash);
-    }
-
-    /* @notice              In an ordered array,find closet the array
-    *                       index whose value closest to the target number.
-    *                       The height of the query must be greater than
-    *                       the height of the init genesis block height,
-    *                       other than it will return -1.
-    *  @param _arr          The array to retrieve
-    *  @param _len          the array length
-    *  @param _v            the target number
-    *  @return              the array index whose value closest to the target number.
-    */
-    function findBookKeeper(uint64[] memory _arr, uint64 _len, uint _v) internal pure returns (uint64, bool) {
-        require(_len > 0, "book keeper list cannot empty");
-        require(_arr.length == _len, "cannot partially query");
-        require(_v > 0, "block height must be positive");
-
-        uint64 left = 0;
-        uint64 right = _len - 1;
-
-        // if only one block height, just return index 0
-        if (_len == 1){
-            return (0, true);
-        }
-
-        while (left <= right){
-            uint64 middle = left + ((right - left) >> 1);
-
-            if(_arr[middle] == _v){
-                return (middle, true);
-            }
-
-            if(_arr[middle] < _v){
-			    left = middle + 1;
-            } else {
-                right = middle - 1;
-            }
-        }
-
-        if(left >= 1 && _arr[left - 1] < _v){
-            return (left - 1, true);
-        }
-
-        return (0, false);
     }
 }
