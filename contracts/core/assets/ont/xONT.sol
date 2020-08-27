@@ -6,7 +6,7 @@ import "./../../../libs/token/ERC20/ERC20.sol";
 
 contract ONTX is Context, ERC20, ERC20Detailed {
     
-    constructor (address lockProxyContractAddress) public ERC20Detailed("ONT Token", "ONTX", 0) {
+    constructor (address lockProxyContractAddress) public ERC20Detailed("Ontology Token", "xONT", 0) {
         _mint(lockProxyContractAddress, 1000000000);
     }
 }
