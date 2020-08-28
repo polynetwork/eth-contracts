@@ -4,9 +4,7 @@ import "./../../libs/ownership/Ownable.sol";
 import "./../../libs/common/ZeroCopySource.sol";
 import "./../../libs/common/ZeroCopySink.sol";
 import "./../../libs/utils/Utils.sol";
-import "./../../libs/math/SafeMath.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
-import "./../../libs/token/ERC20/IERC20.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 
