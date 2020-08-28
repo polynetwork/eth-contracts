@@ -15,7 +15,6 @@ import "../../utils/Utils.sol";
  */
 library SafeERC20 {
     using SafeMath for uint256;
-    using Address for address;
 
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
@@ -61,7 +60,7 @@ library SafeERC20 {
         //  2. The call itself is made, and success asserted
         //  3. The return value is decoded, which in turn checks the size of the returned data.
         // solhint-disable-next-line max-line-length
-        require(address(token).isContract(), "SafeERC20: call to non-contract");
+        require(Utils.isContract(address(token)), "SafeERC20: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = address(token).call(data);
