@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "./../../libs/GSN/Context.sol";
+import "./../../libs/ownership/Ownable.sol";
 import "./../../libs/common/ZeroCopySource.sol";
 import "./../../libs/common/ZeroCopySink.sol";
 import "./../../libs/utils/Utils.sol";
@@ -15,7 +15,7 @@ interface ERC20Interface {
 }
 
 
-contract LockProxy is Context {
+contract LockProxy is Ownable {
     using SafeMath for uint;
       
     struct TxArgs {
@@ -23,7 +23,6 @@ contract LockProxy is Context {
         bytes toAddress;
         uint256 amount;
     }
-    address public operator;
     address public managerProxyContract;
     mapping(uint64 => bytes) public proxyHashMap;
     mapping(address => mapping(uint64 => bytes)) public assetHashMap;
@@ -34,31 +33,24 @@ contract LockProxy is Context {
     event UnlockEvent(address toAssetHash, address toAddress, uint256 amount);
     event LockEvent(address fromAssetHash, address fromAddress, uint64 toChainId, bytes toAssetHash, bytes toAddress, uint256 amount);
     
-    constructor () public {
-        operator = _msgSender();
-    }
-    modifier onlyOperator() {
-        require(_msgSender() == operator) ;
-        _;
-    }
     modifier onlyManagerContract() {
         IEthCrossChainManagerProxy ieccmp = IEthCrossChainManagerProxy(managerProxyContract);
         require(_msgSender() == ieccmp.getEthCrossChainManager(), "msgSender is not EthCrossChainManagerContract");
         _;
     }
     
-    function setManagerProxy(address ethCCMProxyAddr) onlyOperator public {
+    function setManagerProxy(address ethCCMProxyAddr) onlyOwner public {
         managerProxyContract = ethCCMProxyAddr;
         emit SetManagerProxyEvent(managerProxyContract);
     }
     
-    function bindProxyHash(uint64 toChainId, bytes memory targetProxyHash) onlyOperator public returns (bool) {
+    function bindProxyHash(uint64 toChainId, bytes memory targetProxyHash) onlyOwner public returns (bool) {
         proxyHashMap[toChainId] = targetProxyHash;
         emit BindProxyEvent(toChainId, targetProxyHash);
         return true;
     }
     
-    function bindAssetHash(address fromAssetHash, uint64 toChainId, bytes memory toAssetHash) onlyOperator public returns (bool) {
+    function bindAssetHash(address fromAssetHash, uint64 toChainId, bytes memory toAssetHash) onlyOwner public returns (bool) {
         assetHashMap[fromAssetHash][toChainId] = toAssetHash;
         emit BindAssetEvent(fromAssetHash, toChainId, toAssetHash, getBalanceFor(fromAssetHash));
         return true;
