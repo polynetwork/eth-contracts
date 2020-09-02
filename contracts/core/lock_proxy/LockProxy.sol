@@ -62,7 +62,7 @@ contract LockProxy is Ownable {
     *  @param amount            The amount of tokens to be crossed from ethereum to the chain with chainId
     */
     function lock(address fromAssetHash, uint64 toChainId, bytes memory toAddress, uint256 amount) public payable returns (bool) {
-        require(amount != 0, "amount is less than zero!");
+        require(amount != 0, "amount cannot be zero!");
         
         
         require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
