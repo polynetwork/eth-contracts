@@ -4,20 +4,15 @@ import "./../../libs/ownership/Ownable.sol";
 import "./../../libs/common/ZeroCopySource.sol";
 import "./../../libs/common/ZeroCopySink.sol";
 import "./../../libs/utils/Utils.sol";
-import "./../../libs/math/SafeMath.sol";
+import "./../../libs/token/ERC20/SafeERC20.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
-
-interface ERC20Interface {
-    function transfer(address _to, uint256 _value) external returns (bool);
-    function transferFrom(address _from, address _to, uint _value) external returns (bool success);
-    function balanceOf(address account) external view returns (uint256);
-}
 
 
 contract LockProxy is Ownable {
     using SafeMath for uint;
-      
+    using SafeERC20 for IERC20;
+
     struct TxArgs {
         bytes toAssetHash;
         bytes toAddress;
@@ -26,6 +21,7 @@ contract LockProxy is Ownable {
     address public managerProxyContract;
     mapping(uint64 => bytes) public proxyHashMap;
     mapping(address => mapping(uint64 => bytes)) public assetHashMap;
+    mapping(address => bool) safeTransfer;
 
     event SetManagerProxyEvent(address manager);
     event BindProxyEvent(uint64 toChainId, bytes targetProxyHash);
@@ -66,7 +62,7 @@ contract LockProxy is Ownable {
     *  @param amount            The amount of tokens to be crossed from ethereum to the chain with chainId
     */
     function lock(address fromAssetHash, uint64 toChainId, bytes memory toAddress, uint256 amount) public payable returns (bool) {
-        require(amount != 0, "amount is less than zero!");
+        require(amount != 0, "amount cannot be zero!");
         
         
         require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
@@ -128,7 +124,7 @@ contract LockProxy is Ownable {
             address selfAddr = address(this);
             return selfAddr.balance;
         } else {
-            ERC20Interface erc20Token = ERC20Interface(fromAssetHash);
+            IERC20 erc20Token = IERC20(fromAssetHash);
             return erc20Token.balanceOf(address(this));
         }
     }
@@ -160,13 +156,15 @@ contract LockProxy is Ownable {
     
     
     function _transferERC20ToContract(address fromAssetHash, address fromAddress, address toAddress, uint256 amount) internal returns (bool) {
-         ERC20Interface erc20Token = ERC20Interface(fromAssetHash);
-         require(erc20Token.transferFrom(fromAddress, toAddress, amount), "trasnfer ERC20 Token failed!");
+         IERC20 erc20Token = IERC20(fromAssetHash);
+        //  require(erc20Token.transferFrom(fromAddress, toAddress, amount), "trasnfer ERC20 Token failed!");
+         erc20Token.safeTransferFrom(fromAddress, toAddress, amount);
          return true;
     }
     function _transferERC20FromContract(address toAssetHash, address toAddress, uint256 amount) internal returns (bool) {
-         ERC20Interface erc20Token = ERC20Interface(toAssetHash);
-         require(erc20Token.transfer(toAddress, amount), "trasnfer ERC20 Token failed!");
+         IERC20 erc20Token = IERC20(toAssetHash);
+        //  require(erc20Token.transfer(toAddress, amount), "trasnfer ERC20 Token failed!");
+         erc20Token.safeTransfer(toAddress, amount);
          return true;
     }
     
