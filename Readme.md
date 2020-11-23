@@ -33,6 +33,7 @@ Download go-ethereum, choose the preferred version and build the executable abig
 #### install pkg
 ```
 npm install --save-dev @openzeppelin/test-helpers
+npm install --save 'ontology-ts-sdk'
 
 ```
 
