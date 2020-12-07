@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 /**
  * @dev Interface of the EthCrossChainManager contract for business contract like LockProxy to request cross chain transaction

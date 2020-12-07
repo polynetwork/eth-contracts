@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 /**
  * @dev Wrappers over encoding and serialization operation into bytes from bassic types in Solidity for PolyNetwork cross chain utility.
@@ -142,6 +142,32 @@ library ZeroCopySink {
     */
     function WriteUint255(uint256 v) internal pure returns (bytes memory) {
         require(v <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds uint255 range");
+        bytes memory buff;
+
+        assembly{
+            buff := mload(0x40)
+            let byteLen := 0x20
+            mstore(buff, byteLen)
+            for {
+                let mindex := 0x00
+                let vindex := 0x1f
+            } lt(mindex, byteLen) {
+                mindex := add(mindex, 0x01)
+                vindex := sub(vindex, 0x01)
+            }{
+                mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
+            }
+            mstore(0x40, add(buff, 0x40))
+        }
+        return buff;
+    }
+
+    /* @notice          Convert limited uint256 value into bytes
+    *  @param v         The uint256 value
+    *  @return          Converted bytes array
+    */
+    function WriteUint256(uint256 v) internal pure returns (bytes memory) {
+        require(v <= uint256(-1), "Value exceeds uint256 range");
         bytes memory buff;
 
         assembly{

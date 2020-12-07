@@ -9,4 +9,5 @@ interface IUpgradableECCM {
     function paused() external view returns (bool);
     function upgradeToNew(address) external returns (bool);
     function isOwner() external view returns (bool);
+    function setChainId(uint64 _newChainId) external returns (bool);
 }
