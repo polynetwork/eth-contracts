@@ -48,4 +48,11 @@ contract EthCrossChainManagerProxy is IEthCrossChainManagerProxy, Ownable, Pausa
     function getEthCrossChainManager() whenNotPaused public view returns (address) {
         return EthCrossChainManagerAddr_;
     }
+    function changeManagerChainID(uint64 _newChainId) onlyOwner whenPaused public {
+        IUpgradableECCM eccm = IUpgradableECCM(EthCrossChainManagerAddr_);
+        if (!eccm.paused()) {
+            require(eccm.pause(), "Pause old EthCrossChainManager contract failed!");
+        }
+        require(eccm.setChainId(_newChainId), "set chain ID failed. ");
+    }
 }

@@ -9,7 +9,7 @@ contract('EthCrossChain', (accounts) => {
     before(async function () {
         this.ECCD = await EthCrossChainData.new({ from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 10000000, gasPrice: 50 });
         console.log("this.ECCD.address = ", this.ECCD.address);
-        this.ECCM = await EthCrossChainManager.new(this.ECCD.address, { from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 200000000, gasPrice: 50 });
+        this.ECCM = await EthCrossChainManager.new(this.ECCD.address, 2, { from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 200000000, gasPrice: 50 });
         console.log("this.ECCM.address........... = ", this.ECCM.address);
         this.ECCMP = await EthCrossChainManagerProxy.new(this.ECCM.address, { from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 60000000, gasPrice: 50 });
         console.log("this.ECCMP.address........... = ", this.ECCMP.address);
