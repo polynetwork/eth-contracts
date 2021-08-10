@@ -11,12 +11,17 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
+    address public whiteListContract;
+
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd) UpgradableECCM(_eccd) public {}
-    
+    constructor(address _eccd, address LockProxy, bytes memory curEpochPkBytes) UpgradableECCM(_eccd) public {
+        whiteListContract = LockProxy;
+        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(curEpochPkBytes);
+    }
+
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
     *  @param rawHeader     Poly chain genesis block raw header or raw Header including switching consensus peers info
@@ -162,6 +167,15 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
+        // only invoke PreWhiteListed Contract For Now
+        require(toContract==whiteListContract,"invalid toContract");
+        bytes memory _method = toMerkleValue.makeTxParam.method;
+        bool isValidMethod;
+        assembly {
+            isValidMethod := and(eq(mload(_method),6),iszero(xor(mload(add(_method,0x20)),0x756e6c6f636b0000000000000000000000000000000000000000000000000000)))
+        }
+        require(isValidMethod,"invalid method");
+
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 

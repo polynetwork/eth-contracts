@@ -27,3 +27,5 @@ src/.DS_Store
 
 apidoc/
 node_modules
+
+artifacts/
