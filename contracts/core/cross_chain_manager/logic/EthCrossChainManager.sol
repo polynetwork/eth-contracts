@@ -11,15 +11,24 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
-    address public whiteListContract;
+    mapping(address => bool) public whiteListContract;
+    mapping(bytes => bool) public unsetEpochPkBytes;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd, address LockProxy, bytes memory curEpochPkBytes) UpgradableECCM(_eccd) public {
-        whiteListContract = LockProxy;
-        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(curEpochPkBytes);
+    constructor(address _eccd, uint64 _chainId, address[] memory contracts, bytes memory curEpochPkBytes) UpgradableECCM(_eccd,_chainId) public {
+        for (uint i=0;i<contracts.length;i++) {
+            whiteListContract[contracts[i]] = true;
+        }
+        unsetEpochPkBytes[curEpochPkBytes] = true;
+    }
+    
+    function recoverEpochPk(bytes memory EpochPkBytes) whenNotPaused public {
+        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
+        unsetEpochPkBytes[EpochPkBytes] = false;
+        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
     }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
@@ -162,13 +171,13 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
         // Ethereum ChainId is 2, we need to check the transaction is for Ethereum network
-        require(toMerkleValue.makeTxParam.toChainId == uint64(2), "This Tx is not aiming at Ethereum network!");
+        require(toMerkleValue.makeTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
         
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
         // only invoke PreWhiteListed Contract For Now
-        require(toContract==whiteListContract,"invalid toContract");
+        require(whiteListContract[toContract],"invalid toContract");
         bytes memory _method = toMerkleValue.makeTxParam.method;
         bool isValidMethod;
         assembly {
