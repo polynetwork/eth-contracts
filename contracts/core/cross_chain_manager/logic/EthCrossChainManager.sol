@@ -25,7 +25,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         unsetEpochPkBytes[curEpochPkBytes] = true;
     }
     
-    function recoverEpochPk(bytes memory EpochPkBytes) whenNotPaused public {
+    function recoverEpochPk(bytes memory EpochPkBytes) whenPaused public {
         require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
         unsetEpochPkBytes[EpochPkBytes] = false;
         IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
