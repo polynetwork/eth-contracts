@@ -1,4 +1,5 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -11,16 +12,31 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
-    mapping(address => bool) public whiteListContract;
+    mapping(address => bool) public whiteListFromContract;
+    mapping(address => bool) public whiteListToContract;
+    mapping(bytes => bool) public whiteListMethod;
     mapping(bytes => bool) public unsetEpochPkBytes;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd, uint64 _chainId, address[] memory contracts, bytes memory curEpochPkBytes) UpgradableECCM(_eccd,_chainId) public {
-        for (uint i=0;i<contracts.length;i++) {
-            whiteListContract[contracts[i]] = true;
+    constructor(
+        address _eccd, 
+        uint64 _chainId, 
+        address[] memory fromContractWhiteList, 
+        address[] memory toContractWhiteList, 
+        bytes[] memory methodWhiteList,
+        bytes memory curEpochPkBytes
+    ) UpgradableECCM(_eccd,_chainId) public {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<toContractWhiteList.length;i++) {
+            whiteListToContract[toContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<methodWhiteList.length;i++) {
+            whiteListMethod[methodWhiteList[i]] = true;
         }
         unsetEpochPkBytes[curEpochPkBytes] = true;
     }
@@ -103,6 +119,9 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
+        // Only allow whitelist contract to call
+        require(whiteListFromContract[msg.sender],"Invalid from contract");
+        
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
@@ -176,8 +195,9 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
-        // only invoke PreWhiteListed Contract For Now
-        require(whiteListContract[toContract],"invalid toContract");
+        // only invoke PreWhiteListed Contract and method For Now
+        require(whiteListToContract[toContract],"Invalid to contract");
+        require(whiteListMethod[toMerkleValue.makeTxParam.method],"Invalid method");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
