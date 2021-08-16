@@ -1,4 +1,5 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -11,12 +12,41 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
+    mapping(address => bool) public whiteListFromContract;
+    mapping(address => bool) public whiteListToContract;
+    mapping(bytes => bool) public whiteListMethod;
+    mapping(bytes => bool) public unsetEpochPkBytes;
+
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd) UpgradableECCM(_eccd) public {}
+    constructor(
+        address _eccd, 
+        uint64 _chainId, 
+        address[] memory fromContractWhiteList, 
+        address[] memory toContractWhiteList, 
+        bytes[] memory methodWhiteList,
+        bytes memory curEpochPkBytes
+    ) UpgradableECCM(_eccd,_chainId) public {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<toContractWhiteList.length;i++) {
+            whiteListToContract[toContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<methodWhiteList.length;i++) {
+            whiteListMethod[methodWhiteList[i]] = true;
+        }
+        unsetEpochPkBytes[curEpochPkBytes] = true;
+    }
     
+    function recoverEpochPk(bytes memory EpochPkBytes) whenPaused public {
+        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
+        unsetEpochPkBytes[EpochPkBytes] = false;
+        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
+    }
+
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
     *  @param rawHeader     Poly chain genesis block raw header or raw Header including switching consensus peers info
@@ -89,6 +119,9 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
+        // Only allow whitelist contract to call
+        require(whiteListFromContract[msg.sender],"Invalid from contract");
+        
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
@@ -157,11 +190,15 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
         // Ethereum ChainId is 2, we need to check the transaction is for Ethereum network
-        require(toMerkleValue.makeTxParam.toChainId == uint64(2), "This Tx is not aiming at Ethereum network!");
+        require(toMerkleValue.makeTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
         
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
+        // only invoke PreWhiteListed Contract and method For Now
+        require(whiteListToContract[toContract],"Invalid to contract");
+        require(whiteListMethod[toMerkleValue.makeTxParam.method],"Invalid method");
+
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 
