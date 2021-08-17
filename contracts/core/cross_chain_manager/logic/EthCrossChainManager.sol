@@ -15,7 +15,8 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     mapping(address => bool) public whiteListFromContract;
     mapping(address => bool) public whiteListToContract;
     mapping(bytes => bool) public whiteListMethod;
-    mapping(bytes => bool) public unsetEpochPkBytes;
+    address public whiteLister;
+    bool public isWhiteListOn;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
@@ -23,28 +24,34 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
     constructor(
         address _eccd, 
-        uint64 _chainId, 
-        address[] memory fromContractWhiteList, 
-        address[] memory toContractWhiteList, 
-        bytes[] memory methodWhiteList,
-        bytes memory curEpochPkBytes
+        uint64 _chainId
     ) UpgradableECCM(_eccd,_chainId) public {
-        for (uint i=0;i<fromContractWhiteList.length;i++) {
-            whiteListFromContract[fromContractWhiteList[i]] = true;
-        }
-        for (uint i=0;i<toContractWhiteList.length;i++) {
-            whiteListToContract[toContractWhiteList[i]] = true;
-        }
-        for (uint i=0;i<methodWhiteList.length;i++) {
-            whiteListMethod[methodWhiteList[i]] = true;
-        }
-        unsetEpochPkBytes[curEpochPkBytes] = true;
+        whiteLister = msg.sender;
+    }
+
+    modifier onlyWhiteLister() {
+        require(msg.sender == whiteLister , "Access denied, only whiteLister");
+        _;
+    }
+
+    function transferWhiteLister(address _newWhiteLister) onlyWhiteLister public {
+        whiteLister = _newWhiteLister;
     }
     
-    function recoverEpochPk(bytes memory EpochPkBytes) public {
-        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
-        unsetEpochPkBytes[EpochPkBytes] = false;
-        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
+    function setWhiteListToContract(address _addr, bool _allow) onlyWhiteLister public {
+        whiteListToContract[_addr] = _allow;
+    }
+    
+    function setWhiteListFromContract(address _addr, bool _allow) onlyWhiteLister public {
+        whiteListFromContract[_addr] = _allow;
+    }
+    
+    function setWhiteListMethod(bytes memory _method, bool _allow) onlyWhiteLister public {
+        whiteListMethod[_method] = _allow;
+    }
+    
+    function setWhiteListCheck(bool _allow) onlyWhiteLister public {
+        isWhiteListOn = _allow;
     }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
@@ -120,7 +127,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
         // Only allow whitelist contract to call
-        require(whiteListFromContract[msg.sender],"Invalid from contract");
+        require(whiteListFromContract[msg.sender]||!isWhiteListOn,"Invalid from contract");
         
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
@@ -196,8 +203,8 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
         // only invoke PreWhiteListed Contract and method For Now
-        require(whiteListToContract[toContract],"Invalid to contract");
-        require(whiteListMethod[toMerkleValue.makeTxParam.method],"Invalid method");
+        require(whiteListToContract[toContract]||!isWhiteListOn,"Invalid to contract");
+        require(whiteListMethod[toMerkleValue.makeTxParam.method]||!isWhiteListOn,"Invalid method");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
