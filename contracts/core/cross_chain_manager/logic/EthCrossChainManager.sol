@@ -205,6 +205,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         // only invoke PreWhiteListed Contract and method For Now
         require(whiteListToContract[toContract]||!isWhiteListOn,"Invalid to contract");
         require(whiteListMethod[toMerkleValue.makeTxParam.method]||!isWhiteListOn,"Invalid method");
+        require(toContract != address(eccd),"Connot call eccd here!");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
