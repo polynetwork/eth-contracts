@@ -15,7 +15,6 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     mapping(address => bool) public whiteListFromContract;
     mapping(address => bool) public whiteListToContract;
     mapping(bytes => bool) public whiteListMethod;
-    mapping(bytes => bool) public unsetEpochPkBytes;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
@@ -26,8 +25,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         uint64 _chainId, 
         address[] memory fromContractWhiteList, 
         address[] memory toContractWhiteList, 
-        bytes[] memory methodWhiteList,
-        bytes memory curEpochPkBytes
+        bytes[] memory methodWhiteList
     ) UpgradableECCM(_eccd,_chainId) public {
         for (uint i=0;i<fromContractWhiteList.length;i++) {
             whiteListFromContract[fromContractWhiteList[i]] = true;
@@ -38,13 +36,6 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         for (uint i=0;i<methodWhiteList.length;i++) {
             whiteListMethod[methodWhiteList[i]] = true;
         }
-        unsetEpochPkBytes[curEpochPkBytes] = true;
-    }
-    
-    function recoverEpochPk(bytes memory EpochPkBytes) whenPaused public {
-        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
-        unsetEpochPkBytes[EpochPkBytes] = false;
-        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
     }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
