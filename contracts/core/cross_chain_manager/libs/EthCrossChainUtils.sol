@@ -88,8 +88,8 @@ library ECCUtils {
          }
 
          buff = abi.encodePacked(buff, ZeroCopySink.WriteUint16(uint16(_m)));
-         bytes20  nextBookKeeper = ripemd160(abi.encodePacked(sha256(buff)));
-         return (nextBookKeeper, keepers);
+         // bytes20  nextBookKeeper = ripemd160(abi.encodePacked(sha256(buff)));
+         return (bytes20(0), keepers);
     }
 
     /* @notice              Verify public key derived from Poly chain

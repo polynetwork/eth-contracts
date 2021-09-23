@@ -32,8 +32,8 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         
         // Parse header and convit the public keys into nextBookKeeper and compare it with header.nextBookKeeper to verify the validity of signature
         ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
-        (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
-        require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
+        (, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
+        // require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
         
         // Record current epoch start height and public keys (by storing them in address format)
         require(eccd.putCurEpochStartHeight(header.height), "Save Poly chain current epoch start height to Data contract failed!");
@@ -44,42 +44,42 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         return true;
     }
     
-    /* @notice              change Poly chain consensus book keeper
-    *  @param rawHeader     Poly chain change book keeper block raw header
-    *  @param pubKeyList    Poly chain consensus nodes public key list
-    *  @param sigList       Poly chain consensus nodes signature list
-    *  @return              true or false
-    */
-    function changeBookKeeper(bytes memory rawHeader, bytes memory pubKeyList, bytes memory sigList) whenNotPaused public returns(bool) {
-        // Load Ethereum cross chain data contract
-        ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
-        IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
+    // /* @notice              change Poly chain consensus book keeper
+    // *  @param rawHeader     Poly chain change book keeper block raw header
+    // *  @param pubKeyList    Poly chain consensus nodes public key list
+    // *  @param sigList       Poly chain consensus nodes signature list
+    // *  @return              true or false
+    // */
+    // function changeBookKeeper(bytes memory rawHeader, bytes memory pubKeyList, bytes memory sigList) whenNotPaused public returns(bool) {
+    //     // Load Ethereum cross chain data contract
+    //     ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
+    //     IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
-        // Make sure rawHeader.height is higher than recorded current epoch start height
-        uint64 curEpochStartHeight = eccd.getCurEpochStartHeight();
-        require(header.height > curEpochStartHeight, "The height of header is lower than current epoch start height!");
+    //     // Make sure rawHeader.height is higher than recorded current epoch start height
+    //     uint64 curEpochStartHeight = eccd.getCurEpochStartHeight();
+    //     require(header.height > curEpochStartHeight, "The height of header is lower than current epoch start height!");
         
-        // Ensure the rawHeader is the key header including info of switching consensus peers by containing non-empty nextBookKeeper field
-        require(header.nextBookkeeper != bytes20(0), "The nextBookKeeper of header is empty");
+    //     // Ensure the rawHeader is the key header including info of switching consensus peers by containing non-empty nextBookKeeper field
+    //     require(header.nextBookkeeper != bytes20(0), "The nextBookKeeper of header is empty");
         
-        // Verify signature of rawHeader comes from pubKeyList
-        address[] memory polyChainBKs = ECCUtils.deserializeKeepers(eccd.getCurEpochConPubKeyBytes());
-        uint n = polyChainBKs.length;
-        require(ECCUtils.verifySig(rawHeader, sigList, polyChainBKs, n - (n - 1) / 3), "Verify signature failed!");
+    //     // Verify signature of rawHeader comes from pubKeyList
+    //     address[] memory polyChainBKs = ECCUtils.deserializeKeepers(eccd.getCurEpochConPubKeyBytes());
+    //     uint n = polyChainBKs.length;
+    //     require(ECCUtils.verifySig(rawHeader, sigList, polyChainBKs, n - (n - 1) / 3), "Verify signature failed!");
         
-        // Convert pubKeyList into ethereum address format and make sure the compound address from the converted ethereum addresses
-        // equals passed in header.nextBooker
-        (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
-        require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
+    //     // Convert pubKeyList into ethereum address format and make sure the compound address from the converted ethereum addresses
+    //     // equals passed in header.nextBooker
+    //     (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
+    //     require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
         
-        // update current epoch start height of Poly chain and current epoch consensus peers book keepers addresses
-        require(eccd.putCurEpochStartHeight(header.height), "Save MC LatestHeight to Data contract failed!");
-        require(eccd.putCurEpochConPubKeyBytes(ECCUtils.serializeKeepers(keepers)), "Save Poly chain book keepers bytes to Data contract failed!");
+    //     // update current epoch start height of Poly chain and current epoch consensus peers book keepers addresses
+    //     require(eccd.putCurEpochStartHeight(header.height), "Save MC LatestHeight to Data contract failed!");
+    //     require(eccd.putCurEpochConPubKeyBytes(ECCUtils.serializeKeepers(keepers)), "Save Poly chain book keepers bytes to Data contract failed!");
         
-        // Fire the change book keeper event
-        emit ChangeBookKeeperEvent(header.height, rawHeader);
-        return true;
-    }
+    //     // Fire the change book keeper event
+    //     emit ChangeBookKeeperEvent(header.height, rawHeader);
+    //     return true;
+    // }
 
 
     /* @notice              ERC20 token cross chain to other blockchain.
