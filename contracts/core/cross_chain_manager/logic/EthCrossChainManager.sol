@@ -13,9 +13,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
     mapping(address => bool) public whiteListFromContract;
-    mapping(address => bool) public whiteListToContract;
-    mapping(bytes => bool) public whiteListMethod;
-    mapping(bytes => bool) public unsetEpochPkBytes;
+    mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
@@ -25,26 +23,17 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address _eccd, 
         uint64 _chainId, 
         address[] memory fromContractWhiteList, 
-        address[] memory toContractWhiteList, 
-        bytes[] memory methodWhiteList,
-        bytes memory curEpochPkBytes
+        bytes[] memory contractMethodWhiteList
     ) UpgradableECCM(_eccd,_chainId) public {
         for (uint i=0;i<fromContractWhiteList.length;i++) {
             whiteListFromContract[fromContractWhiteList[i]] = true;
         }
-        for (uint i=0;i<toContractWhiteList.length;i++) {
-            whiteListToContract[toContractWhiteList[i]] = true;
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
         }
-        for (uint i=0;i<methodWhiteList.length;i++) {
-            whiteListMethod[methodWhiteList[i]] = true;
-        }
-        unsetEpochPkBytes[curEpochPkBytes] = true;
-    }
-    
-    function recoverEpochPk(bytes memory EpochPkBytes) whenPaused public {
-        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
-        unsetEpochPkBytes[EpochPkBytes] = false;
-        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
     }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
@@ -196,8 +185,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
         // only invoke PreWhiteListed Contract and method For Now
-        require(whiteListToContract[toContract],"Invalid to contract");
-        require(whiteListMethod[toMerkleValue.makeTxParam.method],"Invalid method");
+        require(whiteListContractMethodMap[toContract][toMerkleValue.makeTxParam.method],"Invalid to contract or method");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");

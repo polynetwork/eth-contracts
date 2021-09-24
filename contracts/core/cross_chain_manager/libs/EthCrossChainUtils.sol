@@ -124,6 +124,7 @@ library ECCUtils {
             s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
             v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
             signers[j] =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
+            if (signers[j] == address(0)) return false;
         }
         return Utils.containMAddresses(_keepers, signers, _m);
     }
