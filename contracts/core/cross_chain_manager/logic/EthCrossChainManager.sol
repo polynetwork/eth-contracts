@@ -11,7 +11,8 @@ import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
-
+    
+    address public whiteLister;
     mapping(address => bool) public whiteListFromContract;
     mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
 
@@ -25,6 +26,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address[] memory fromContractWhiteList, 
         bytes[] memory contractMethodWhiteList
     ) UpgradableECCM(_eccd,_chainId) public {
+        whiteLister = msg.sender;
         for (uint i=0;i<fromContractWhiteList.length;i++) {
             whiteListFromContract[fromContractWhiteList[i]] = true;
         }
@@ -32,6 +34,41 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
             (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
             for (uint j=0;j<methods.length;j++) {
                 whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    modifier onlyWhiteLister() {
+        require(msg.sender == whiteLister, "Not whiteLister");
+        _;
+    }
+    
+    function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+    }
+    
+    function removeFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = false;
+        }
+    }
+    
+    function setContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = false;
             }
         }
     }
