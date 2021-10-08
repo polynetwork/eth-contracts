@@ -12,10 +12,9 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
+    address public whiteLister;
     mapping(address => bool) public whiteListFromContract;
-    mapping(address => bool) public whiteListToContract;
-    mapping(bytes => bool) public whiteListMethod;
-    mapping(bytes => bool) public unsetEpochPkBytes;
+    mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
@@ -25,26 +24,58 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         address _eccd, 
         uint64 _chainId, 
         address[] memory fromContractWhiteList, 
-        address[] memory toContractWhiteList, 
-        bytes[] memory methodWhiteList,
-        bytes memory curEpochPkBytes
+        bytes[] memory contractMethodWhiteList
     ) UpgradableECCM(_eccd,_chainId) public {
+        whiteLister = msg.sender;
         for (uint i=0;i<fromContractWhiteList.length;i++) {
             whiteListFromContract[fromContractWhiteList[i]] = true;
         }
-        for (uint i=0;i<toContractWhiteList.length;i++) {
-            whiteListToContract[toContractWhiteList[i]] = true;
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
         }
-        for (uint i=0;i<methodWhiteList.length;i++) {
-            whiteListMethod[methodWhiteList[i]] = true;
-        }
-        unsetEpochPkBytes[curEpochPkBytes] = true;
     }
     
-    function recoverEpochPk(bytes memory EpochPkBytes) whenPaused public {
-        require(unsetEpochPkBytes[EpochPkBytes],"Don't arbitrarily set");
-        unsetEpochPkBytes[EpochPkBytes] = false;
-        IEthCrossChainData(EthCrossChainDataAddress).putCurEpochConPubKeyBytes(EpochPkBytes);
+    modifier onlyWhiteLister() {
+        require(msg.sender == whiteLister, "Not whiteLister");
+        _;
+    }
+
+    function setWhiteLister(address newWL) public onlyWhiteLister {
+        require(newWL!=address(0), "Can not transfer to address(0)");
+        whiteLister = newWL;
+    }
+    
+    function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+    }
+    
+    function removeFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = false;
+        }
+    }
+    
+    function setContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = false;
+            }
+        }
     }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
@@ -61,8 +92,8 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         
         // Parse header and convit the public keys into nextBookKeeper and compare it with header.nextBookKeeper to verify the validity of signature
         ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
-        (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
-        require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
+        (, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
+        // require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
         
         // Record current epoch start height and public keys (by storing them in address format)
         require(eccd.putCurEpochStartHeight(header.height), "Save Poly chain current epoch start height to Data contract failed!");
@@ -73,42 +104,42 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         return true;
     }
     
-    /* @notice              change Poly chain consensus book keeper
-    *  @param rawHeader     Poly chain change book keeper block raw header
-    *  @param pubKeyList    Poly chain consensus nodes public key list
-    *  @param sigList       Poly chain consensus nodes signature list
-    *  @return              true or false
-    */
-    function changeBookKeeper(bytes memory rawHeader, bytes memory pubKeyList, bytes memory sigList) whenNotPaused public returns(bool) {
-        // Load Ethereum cross chain data contract
-        ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
-        IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
+    // /* @notice              change Poly chain consensus book keeper
+    // *  @param rawHeader     Poly chain change book keeper block raw header
+    // *  @param pubKeyList    Poly chain consensus nodes public key list
+    // *  @param sigList       Poly chain consensus nodes signature list
+    // *  @return              true or false
+    // */
+    // function changeBookKeeper(bytes memory rawHeader, bytes memory pubKeyList, bytes memory sigList) whenNotPaused public returns(bool) {
+    //     // Load Ethereum cross chain data contract
+    //     ECCUtils.Header memory header = ECCUtils.deserializeHeader(rawHeader);
+    //     IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
-        // Make sure rawHeader.height is higher than recorded current epoch start height
-        uint64 curEpochStartHeight = eccd.getCurEpochStartHeight();
-        require(header.height > curEpochStartHeight, "The height of header is lower than current epoch start height!");
+    //     // Make sure rawHeader.height is higher than recorded current epoch start height
+    //     uint64 curEpochStartHeight = eccd.getCurEpochStartHeight();
+    //     require(header.height > curEpochStartHeight, "The height of header is lower than current epoch start height!");
         
-        // Ensure the rawHeader is the key header including info of switching consensus peers by containing non-empty nextBookKeeper field
-        require(header.nextBookkeeper != bytes20(0), "The nextBookKeeper of header is empty");
+    //     // Ensure the rawHeader is the key header including info of switching consensus peers by containing non-empty nextBookKeeper field
+    //     require(header.nextBookkeeper != bytes20(0), "The nextBookKeeper of header is empty");
         
-        // Verify signature of rawHeader comes from pubKeyList
-        address[] memory polyChainBKs = ECCUtils.deserializeKeepers(eccd.getCurEpochConPubKeyBytes());
-        uint n = polyChainBKs.length;
-        require(ECCUtils.verifySig(rawHeader, sigList, polyChainBKs, n - (n - 1) / 3), "Verify signature failed!");
+    //     // Verify signature of rawHeader comes from pubKeyList
+    //     address[] memory polyChainBKs = ECCUtils.deserializeKeepers(eccd.getCurEpochConPubKeyBytes());
+    //     uint n = polyChainBKs.length;
+    //     require(ECCUtils.verifySig(rawHeader, sigList, polyChainBKs, n - (n - 1) / 3), "Verify signature failed!");
         
-        // Convert pubKeyList into ethereum address format and make sure the compound address from the converted ethereum addresses
-        // equals passed in header.nextBooker
-        (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
-        require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
+    //     // Convert pubKeyList into ethereum address format and make sure the compound address from the converted ethereum addresses
+    //     // equals passed in header.nextBooker
+    //     (bytes20 nextBookKeeper, address[] memory keepers) = ECCUtils.verifyPubkey(pubKeyList);
+    //     require(header.nextBookkeeper == nextBookKeeper, "NextBookers illegal");
         
-        // update current epoch start height of Poly chain and current epoch consensus peers book keepers addresses
-        require(eccd.putCurEpochStartHeight(header.height), "Save MC LatestHeight to Data contract failed!");
-        require(eccd.putCurEpochConPubKeyBytes(ECCUtils.serializeKeepers(keepers)), "Save Poly chain book keepers bytes to Data contract failed!");
+    //     // update current epoch start height of Poly chain and current epoch consensus peers book keepers addresses
+    //     require(eccd.putCurEpochStartHeight(header.height), "Save MC LatestHeight to Data contract failed!");
+    //     require(eccd.putCurEpochConPubKeyBytes(ECCUtils.serializeKeepers(keepers)), "Save Poly chain book keepers bytes to Data contract failed!");
         
-        // Fire the change book keeper event
-        emit ChangeBookKeeperEvent(header.height, rawHeader);
-        return true;
-    }
+    //     // Fire the change book keeper event
+    //     emit ChangeBookKeeperEvent(header.height, rawHeader);
+    //     return true;
+    // }
 
 
     /* @notice              ERC20 token cross chain to other blockchain.
@@ -119,8 +150,6 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
-        // Only allow whitelist contract to call
-        require(whiteListFromContract[msg.sender],"Invalid from contract");
         
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
@@ -195,9 +224,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
-        // only invoke PreWhiteListed Contract and method For Now
-        require(whiteListToContract[toContract],"Invalid to contract");
-        require(whiteListMethod[toMerkleValue.makeTxParam.method],"Invalid method");
+        require(toContract!=EthCrossChainDataAddress,"Do not try to call eccd here!");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
