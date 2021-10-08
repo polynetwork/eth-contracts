@@ -42,6 +42,11 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(msg.sender == whiteLister, "Not whiteLister");
         _;
     }
+
+    function setWhiteLister(address newWL) public onlyWhiteLister {
+        require(newWL!=address(0), "Can not transfer to address(0)");
+        whiteLister = newWL;
+    }
     
     function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
         for (uint i=0;i<fromContractWhiteList.length;i++) {
