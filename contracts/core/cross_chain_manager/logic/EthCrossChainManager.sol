@@ -1,4 +1,5 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -11,12 +12,71 @@ import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
+    address public whiteLister;
+    mapping(address => bool) public whiteListFromContract;
+    mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
+
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd, uint64 _chainId) UpgradableECCM(_eccd,_chainId) public {}
+    constructor(
+        address _eccd, 
+        uint64 _chainId, 
+        address[] memory fromContractWhiteList, 
+        bytes[] memory contractMethodWhiteList
+    ) UpgradableECCM(_eccd,_chainId) public {
+        whiteLister = msg.sender;
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    modifier onlyWhiteLister() {
+        require(msg.sender == whiteLister, "Not whiteLister");
+        _;
+    }
 
+    function setWhiteLister(address newWL) public onlyWhiteLister {
+        require(newWL!=address(0), "Can not transfer to address(0)");
+        whiteLister = newWL;
+    }
+    
+    function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+    }
+    
+    function removeFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = false;
+        }
+    }
+    
+    function setContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = false;
+            }
+        }
+    }
 
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
