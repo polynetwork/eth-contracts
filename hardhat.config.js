@@ -55,6 +55,16 @@ module.exports = {
       url: `https://http-mainnet.hecochain.com`,
       accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
     },
+    ok: {
+      url: `https://exchainrpc.okex.org/`,
+      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+    },
+    polygon: {
+      url: `https://rpc-mainnet.matic.network`,
+      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+    },
+
+
     ropsten: {
       url: `https://ropsten.infura.io/v3/9bca539684b6408d9dbcbb179e593eab`,
       accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
@@ -69,6 +79,14 @@ module.exports = {
     },
     heco_testnet: {
       url: `https://http-testnet.hecochain.com`,
+      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+    },
+    ok_testnet: {
+      url: `https://exchaintestrpc.okex.org/`,
+      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+    },
+    polygon_testnet: {
+      url: `https://rpc-mumbai.maticvigil.com`,
       accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
     },
     // ropsten: {
