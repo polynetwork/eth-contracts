@@ -6,12 +6,12 @@ const colors = require('colors');
 hre.web3 = new Web3(hre.network.provider);
 
 async function main() {
-    await printWhiteListInfo("eth-main");
-    await printWhiteListInfo("bsc-main");
-    await printWhiteListInfo("heco-main");
-    await printWhiteListInfo("ok-main");
-    await printWhiteListInfo("polygon-main");
-    await printWhiteListInfo("arbitrum-main");
+    await printWhiteListInfo("xdai-main");
+    // await printWhiteListInfo("bsc-main");
+    // await printWhiteListInfo("heco-main");
+    // await printWhiteListInfo("ok-main");
+    // await printWhiteListInfo("polygon-main");
+    // await printWhiteListInfo("arbitrum-main");
 }
 
 async function printWhiteListInfo(networkName) {
@@ -283,6 +283,24 @@ function getWhiteListInfo(networkName) {
             contractMethodWhiteList = [
                 // lockproxy: (method: unlock)
                 ['0x2f7ac9436ba4B548f9582af91CA1Ef02cd2F1f03', ['0x756e6c6f636b']]
+                // swapper: nil
+                // nftptoxy: nil
+                // switcheo: nil
+                // flux: nil
+            ];
+            return [fromContractWhiteList,contractMethodWhiteList];
+        case 'xdai-main' :
+            fromContractWhiteList = [
+                // lockproxy:
+                '0x77F3A156e8E597C64d4a12d62f20a0d2ff839dD5'
+                // swapper:
+                // nftptoxy: nil
+                // switcheo: nil
+                // flux: nil
+            ];
+            contractMethodWhiteList = [
+                // lockproxy: (method: unlock)
+                ['0x77F3A156e8E597C64d4a12d62f20a0d2ff839dD5', ['0x756e6c6f636b']]
                 // swapper: nil
                 // nftptoxy: nil
                 // switcheo: nil
