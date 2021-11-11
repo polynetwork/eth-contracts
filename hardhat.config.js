@@ -41,53 +41,53 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/f7fd127c230e49b292bafd6c338995ea`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     arbitrum: {
       url: `https://arb1.arbitrum.io/rpc`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     bsc: {
       url: `http://172.168.3.40:8545`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     heco: {
       url: `https://http-mainnet.hecochain.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     ok: {
       url: `https://exchainrpc.okex.org/`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     polygon: {
       url: `https://rpc-mainnet.matic.network`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
 
 
     ropsten: {
       url: `https://ropsten.infura.io/v3/9bca539684b6408d9dbcbb179e593eab`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     arbitrum_testnet: {
       url: `https://rinkeby.arbitrum.io/rpc`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     bsc_testnet: {
       url: `https://data-seed-prebsc-1-s1.binance.org:8545`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     heco_testnet: {
       url: `https://http-testnet.hecochain.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     ok_testnet: {
       url: `https://exchaintestrpc.okex.org/`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     polygon_testnet: {
       url: `https://rpc-mumbai.maticvigil.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     // ropsten: {
     //   url: process.env.ROPSTEN_URL || "",
