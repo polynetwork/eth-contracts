@@ -1,4 +1,4 @@
-// require("dotenv").config();
+require("dotenv").config();
 
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
@@ -15,8 +15,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-let PRIVATE_KEY = '';
-let PRIVATE_KEY_1 = '';
 let ETHERSCAN_API_KEY = '';
 
 // You need to export an object to set up your config
@@ -41,53 +39,65 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/f7fd127c230e49b292bafd6c338995ea`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     arbitrum: {
       url: `https://arb1.arbitrum.io/rpc`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     bsc: {
       url: `http://172.168.3.40:8545`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     heco: {
       url: `https://http-mainnet.hecochain.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     ok: {
       url: `https://exchainrpc.okex.org/`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     polygon: {
       url: `https://rpc-mainnet.matic.network`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
 
 
     ropsten: {
       url: `https://ropsten.infura.io/v3/9bca539684b6408d9dbcbb179e593eab`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     arbitrum_testnet: {
       url: `https://rinkeby.arbitrum.io/rpc`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     bsc_testnet: {
       url: `https://data-seed-prebsc-1-s1.binance.org:8545`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     heco_testnet: {
       url: `https://http-testnet.hecochain.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     ok_testnet: {
       url: `https://exchaintestrpc.okex.org/`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
     },
     polygon_testnet: {
       url: `https://rpc-mumbai.maticvigil.com`,
-      accounts: [`0x${PRIVATE_KEY}`,`0x${PRIVATE_KEY_1}`]
+      accounts: []
+    },
+    ftm_testnet: {
+      url: `https://rpc.testnet.fantom.network/`,
+      accounts: [`9a8bb0dfef83b8a71c4818500b76bfaeb6f68f93a711f3d081587f2fc9056338`]
+    },
+    avax_testnet: {
+      url: `https://api.avax-test.network/ext/bc/C/rpc`,
+      accounts: [`25157ecd6e1aad29ffd6137ae113a654e70dc2a66a2e37c8391d0c38293e1e06`]
+    },
+    op_testnet: {
+      url: `https://kovan.optimism.io`,
+      accounts: [`aec101ecdb5c86931e0ca5e635824f0d0f05240760c01ddee64be90b2a2608a9`]
     },
     // ropsten: {
     //   url: process.env.ROPSTEN_URL || "",

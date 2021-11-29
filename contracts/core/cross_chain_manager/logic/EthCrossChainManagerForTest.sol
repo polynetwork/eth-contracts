@@ -187,20 +187,20 @@ contract EthCrossChainManagerForTest is IEthCrossChainManager, UpgradableECCM {
     */
     function _executeCrossChainTx(address _toContract, bytes memory _method, bytes memory _args, bytes memory _fromContractAddr, uint64 _fromChainId) internal returns (bool){
         // // Ensure the targeting contract gonna be invoked is indeed a contract rather than a normal account address
-        // require(Utils.isContract(_toContract), "The passed in address is not a contract!");
-        // bytes memory returnData;
-        // bool success;
+        require(Utils.isContract(_toContract), "The passed in address is not a contract!");
+        bytes memory returnData;
+        bool success;
         
-        // // The returnData will be bytes32, the last byte must be 01;
-        // (success, returnData) = _toContract.call(abi.encodePacked(bytes4(keccak256(abi.encodePacked(_method, "(bytes,bytes,uint64)"))), abi.encode(_args, _fromContractAddr, _fromChainId)));
+        // The returnData will be bytes32, the last byte must be 01;
+        (success, returnData) = _toContract.call(abi.encodePacked(bytes4(keccak256(abi.encodePacked(_method, "(bytes,bytes,uint64)"))), abi.encode(_args, _fromContractAddr, _fromChainId)));
         
-        // // Ensure the executation is successful
-        // require(success == true, "EthCrossChain call business contract failed");
+        // Ensure the executation is successful
+        require(success == true, "EthCrossChain call business contract failed");
         
-        // // Ensure the returned value is true
-        // require(returnData.length != 0, "No return value from business contract!");
-        // (bool res,) = ZeroCopySource.NextBool(returnData, 31);
-        // require(res == true, "EthCrossChain call business contract return is not true");
+        // Ensure the returned value is true
+        require(returnData.length != 0, "No return value from business contract!");
+        (bool res,) = ZeroCopySource.NextBool(returnData, 31);
+        require(res == true, "EthCrossChain call business contract return is not true");
         
         return true;
     }
