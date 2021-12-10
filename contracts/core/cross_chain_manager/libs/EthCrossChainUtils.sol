@@ -2,7 +2,10 @@ pragma solidity ^0.5.0;
 import "./../../../libs/common/ZeroCopySource.sol";
 import "./../../../libs/common/ZeroCopySink.sol";
 import "./../../../libs/utils/Utils.sol";
+import "./../../../libs/math/SafeMath.sol";
 library ECCUtils {
+    using SafeMath for uint256;
+    
     struct Header {
         uint32 version;
         uint64 chainId;
@@ -47,7 +50,7 @@ library ECCUtils {
         (value, off)  = ZeroCopySource.NextVarBytes(_auditPath, off);
 
         bytes32 hash = Utils.hashLeaf(value);
-        uint size = (_auditPath.length - off) / 33;
+        uint size = _auditPath.length.sub(off).div(33);
         bytes32 nodeHash;
         byte pos;
         for (uint i = 0; i < size; i++) {
@@ -111,8 +114,7 @@ library ECCUtils {
     function verifySig(bytes memory _rawHeader, bytes memory _sigList, address[] memory _keepers, uint _m) internal pure returns (bool){
         bytes32 hash = getHeaderHash(_rawHeader);
 
-        uint signed = 0;
-        uint sigCount = _sigList.length / POLYCHAIN_SIGNATURE_LEN;
+        uint sigCount = _sigList.length.div(POLYCHAIN_SIGNATURE_LEN);
         address[] memory signers = new address[](sigCount);
         bytes32 r;
         bytes32 s;
@@ -122,6 +124,7 @@ library ECCUtils {
             s =  Utils.bytesToBytes32(Utils.slice(_sigList, j*POLYCHAIN_SIGNATURE_LEN + 32, 32));
             v =  uint8(_sigList[j*POLYCHAIN_SIGNATURE_LEN + 64]) + 27;
             signers[j] =  ecrecover(sha256(abi.encodePacked(hash)), v, r, s);
+            if (signers[j] == address(0)) return false;
         }
         return Utils.containMAddresses(_keepers, signers, _m);
     }

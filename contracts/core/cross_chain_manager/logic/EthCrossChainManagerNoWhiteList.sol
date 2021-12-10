@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -8,15 +8,18 @@ import "./../upgrade/UpgradableECCM.sol";
 import "./../libs/EthCrossChainUtils.sol";
 import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
-contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
+contract EthCrossChainManagerNoWhiteList is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd) UpgradableECCM(_eccd) public {}
-    
+    constructor(
+        address _eccd, 
+        uint64 _chainId
+    ) UpgradableECCM(_eccd,_chainId) public {}
+
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
     *  @param rawHeader     Poly chain genesis block raw header or raw Header including switching consensus peers info
@@ -89,6 +92,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
+        
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
@@ -115,7 +119,6 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         emit CrossChainEvent(tx.origin, paramTxHash, msg.sender, toChainId, toContract, rawParam);
         return true;
     }
-
     /* @notice              Verify Poly chain header and proof, execute the cross chain tx from Poly chain to Ethereum
     *  @param proof         Poly chain tx merkle proof
     *  @param rawHeader     The header containing crossStateRoot to verify the above tx merkle proof
@@ -141,7 +144,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
             require(ECCUtils.verifySig(rawHeader, headerSig, polyChainBKs, n - ( n - 1) / 3), "Verify poly chain header signature failed!");
         } else {
             // We need to verify the signature of curHeader 
-            require(ECCUtils.verifySig(curRawHeader, headerSig, polyChainBKs, n - ( n - 1) / 3), "Verify poly chain header signature failed!");
+            require(ECCUtils.verifySig(curRawHeader, headerSig, polyChainBKs, n - ( n - 1) / 3), "Verify poly chain current epoch header signature failed!");
 
             // Then use curHeader.StateRoot and headerProof to verify rawHeader.CrossStateRoot
             ECCUtils.Header memory curHeader = ECCUtils.deserializeHeader(curRawHeader);
@@ -149,7 +152,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
             require(ECCUtils.getHeaderHash(rawHeader) == Utils.bytesToBytes32(proveValue), "verify header proof failed!");
         }
         
-        // Through rawHeader.CrossStateRoot, the toMerkleValue or cross chain msg can be verified and parsed from proof
+        // Through rawHeader.CrossStatesRoot, the toMerkleValue or cross chain msg can be verified and parsed from proof
         bytes memory toMerkleValueBs = ECCUtils.merkleProve(proof, header.crossStatesRoot);
         
         // Parse the toMerkleValue struct and make sure the tx has not been processed, then mark this tx as processed
@@ -158,11 +161,12 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
         // Ethereum ChainId is 2, we need to check the transaction is for Ethereum network
-        require(toMerkleValue.makeTxParam.toChainId == uint64(2), "This Tx is not aiming at Ethereum network!");
+        require(toMerkleValue.makeTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
         
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
-        
+        require(toContract != EthCrossChainDataAddress, "No eccd here!");
+
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 
@@ -172,8 +176,7 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
 
         return true;
     }
-
-
+    
     /* @notice                  Dynamically invoke the targeting contract, and trigger executation of cross chain tx on Ethereum side
     *  @param _toContract       The targeting contract that will be invoked by the Ethereum Cross Chain Manager contract
     *  @param _method           At which method will be invoked within the targeting contract
@@ -200,9 +203,5 @@ contract NewEthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(res == true, "EthCrossChain call business contract return is not true");
         
         return true;
-    }
-    // new feature added in the upgraded contract
-    function addFunctionTest1(uint256 a, uint256 b) whenNotPaused public view returns (uint256) {
-        return a.add(b);
     }
 }
