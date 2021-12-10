@@ -1,4 +1,5 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -10,13 +11,73 @@ import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
+    
+    address public whiteLister;
+    mapping(address => bool) public whiteListFromContract;
+    mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    constructor(address _eccd) UpgradableECCM(_eccd) public {}
+    constructor(
+        address _eccd, 
+        uint64 _chainId, 
+        address[] memory fromContractWhiteList, 
+        bytes[] memory contractMethodWhiteList
+    ) UpgradableECCM(_eccd,_chainId) public {
+        whiteLister = msg.sender;
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
     
+    modifier onlyWhiteLister() {
+        require(msg.sender == whiteLister, "Not whiteLister");
+        _;
+    }
+
+    function setWhiteLister(address newWL) public onlyWhiteLister {
+        require(newWL!=address(0), "Can not transfer to address(0)");
+        whiteLister = newWL;
+    }
+    
+    function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = true;
+        }
+    }
+    
+    function removeFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<fromContractWhiteList.length;i++) {
+            whiteListFromContract[fromContractWhiteList[i]] = false;
+        }
+    }
+    
+    function setContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = true;
+            }
+        }
+    }
+    
+    function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
+        for (uint i=0;i<contractMethodWhiteList.length;i++) {
+            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
+            for (uint j=0;j<methods.length;j++) {
+                whiteListContractMethodMap[toContract][methods[j]] = false;
+            }
+        }
+    }
+
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
     *  @param rawHeader     Poly chain genesis block raw header or raw Header including switching consensus peers info
@@ -89,6 +150,9 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
+        // Only allow whitelist contract to call
+        require(whiteListFromContract[msg.sender],"Invalid from contract");
+        
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
@@ -157,11 +221,14 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         require(eccd.markFromChainTxExist(toMerkleValue.fromChainID, Utils.bytesToBytes32(toMerkleValue.txHash)), "Save crosschain tx exist failed!");
         
         // Ethereum ChainId is 2, we need to check the transaction is for Ethereum network
-        require(toMerkleValue.makeTxParam.toChainId == uint64(2), "This Tx is not aiming at Ethereum network!");
+        require(toMerkleValue.makeTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
         
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
         
+        // only invoke PreWhiteListed Contract and method For Now
+        require(whiteListContractMethodMap[toContract][toMerkleValue.makeTxParam.method],"Invalid to contract or method");
+
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
 

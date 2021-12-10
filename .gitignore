@@ -22,8 +22,11 @@ lib/
 # IDE specific
 /.vscode
 
+.DS_Store
 /.DS_Store
 src/.DS_Store
 
 apidoc/
 node_modules
+
+artifacts/
