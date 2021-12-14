@@ -110,8 +110,14 @@ async function getPolyChainId() {
     //   return ;
 
     // testnet
-    case 3: // eth-test
+    case 3: // ropsten-test
       return 2;
+    case 4: // rinkeby
+      return 402;
+    case 5: // goerli
+      return 502;
+    case 42: // kovan
+      return 302;
     case 97: // bsc-test
       return 79;
     case 256: // heco-test
