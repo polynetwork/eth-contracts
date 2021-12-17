@@ -32,7 +32,7 @@ contract LockProxyWithLP is Ownable {
 
     event depositEvent(address toAddress, address fromAssetHash, address fromLPHash, uint256 amount);
     event withdrawEvent(address toAddress, address fromAssetHash, address fromLPHash, uint256 amount);
-    event BindLPtoAssetEvent(address fromAssetHash, address fromLPHash, uint64 toChainId, bytes toAssetHash, bytes toLPHash, uint currentAssetBalance, uint currentLPBalance);
+    event BindLPToAssetEvent(address originAssetAddress, address LPTokenAddress);
 
     modifier onlyManagerContract() {
         IEthCrossChainManagerProxy ieccmp = IEthCrossChainManagerProxy(managerProxyContract);
@@ -57,11 +57,19 @@ contract LockProxyWithLP is Ownable {
         return true;
     }
 
-    function bindLPtoAssetHash(address fromAssetHash, address fromLPHash, uint64 toChainId, bytes memory toAssetHash, bytes memory toLPHash) onlyOwner public returns (bool) {
+    function bindLPToAsset(address originAssetAddress, address LPTokenAddress) onlyOwner public returns (bool) {
+        assetLPMap[originAssetAddress] = LPTokenAddress;
+        emit BindLPToAssetEvent(originAssetAddress, LPTokenAddress);
+        return true;
+    }
+
+    function bindLPAndAsset(address fromAssetHash, address fromLPHash, uint64 toChainId, bytes memory toAssetHash, bytes memory toLPHash) onlyOwner public returns (bool) {
         assetHashMap[fromAssetHash][toChainId] = toAssetHash;
         assetHashMap[fromLPHash][toChainId] = toLPHash;
         assetLPMap[fromAssetHash] = fromLPHash;
-        emit BindLPtoAssetEvent(fromAssetHash, fromLPHash, toChainId, toAssetHash, toLPHash, getBalanceFor(fromAssetHash), getBalanceFor(fromLPHash));
+        emit BindAssetEvent(fromAssetHash, toChainId, toAssetHash, getBalanceFor(fromAssetHash));
+        emit BindAssetEvent(fromLPHash, toChainId, toLPHash, getBalanceFor(fromLPHash));
+        emit BindLPToAssetEvent(fromAssetHash, fromLPHash);
         return true;
     }
     
@@ -83,15 +91,26 @@ contract LockProxyWithLP is Ownable {
         }
         return true;
     }
+
+    function bindLPToAssetBatch(address[] memory originAssetAddress, address[] memory LPTokenAddress) onlyOwner public returns (bool) {
+        require(originAssetAddress.length == LPTokenAddress.length, "bindLPToAssetBatch: args length diff");
+        for (uint i = 0; i < originAssetAddress.length; i++) {
+            assetLPMap[originAssetAddress[i]] = LPTokenAddress[i];
+            emit BindLPToAssetEvent(originAssetAddress[i], LPTokenAddress[i]);
+        }
+        return true;
+    }
  
-    function bindLPtoAssetBatch(address[] memory fromAssetHash, address[] memory fromLPHash, uint64[] memory toChainId, bytes[] memory toAssetHash, bytes[] memory toLPHash) onlyOwner public returns (bool) {
-        require(fromAssetHash.length == fromLPHash.length, "bindLPtoAssetBatch: args length diff");
-        require(toAssetHash.length == toLPHash.length, "bindLPtoAssetBatch: args length diff");
+    function bindLPAndAssetBatch(address[] memory fromAssetHash, address[] memory fromLPHash, uint64[] memory toChainId, bytes[] memory toAssetHash, bytes[] memory toLPHash) onlyOwner public returns (bool) {
+        require(fromAssetHash.length == fromLPHash.length, "bindLPAndAssetBatch: args length diff");
+        require(toAssetHash.length == toLPHash.length, "bindLPAndAssetBatch: args length diff");
         for(uint256 i = 0; i < fromLPHash.length; i++) {
             assetHashMap[fromAssetHash[i]][toChainId[i]] = toAssetHash[i];
             assetHashMap[fromLPHash[i]][toChainId[i]] = toLPHash[i];
             assetLPMap[fromAssetHash[i]] = fromLPHash[i];
-            emit BindLPtoAssetEvent(fromAssetHash[i], fromLPHash[i], toChainId[i], toAssetHash[i], toLPHash[i], getBalanceFor(fromAssetHash[i]), getBalanceFor(fromLPHash[i]));
+            emit BindAssetEvent(fromAssetHash[i], toChainId[i], toAssetHash[i], getBalanceFor(fromAssetHash[i]));
+            emit BindAssetEvent(fromLPHash[i], toChainId[i], toLPHash[i], getBalanceFor(fromLPHash[i]));
+            emit BindLPToAssetEvent(fromAssetHash[i], fromLPHash[i]);
         }
         return true;
     } 
@@ -163,22 +182,22 @@ contract LockProxyWithLP is Ownable {
 
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
 
-        address fromLPHash = assetLPMap[originAssetAddress];
-        require(_transferFromContract(fromLPHash, msg.sender, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
+        address LPTokenAddress = assetLPMap[originAssetAddress];
+        require(_transferFromContract(LPTokenAddress, msg.sender, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
         
-        emit depositEvent(msg.sender, originAssetAddress, fromLPHash, amount);
+        emit depositEvent(msg.sender, originAssetAddress, LPTokenAddress, amount);
         return true;
     }
 
-    function withdraw(address LPTokenAddress, uint amount) public returns (bool) {
+    function withdraw(address targetTokenAddress, uint amount) public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
-        address fromLPHash = assetLPMap[LPTokenAddress];
-        require(_transferToContract(fromLPHash, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
+        address LPTokenAddress = assetLPMap[targetTokenAddress];
+        require(_transferToContract(LPTokenAddress, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
 
-        require(_transferFromContract(LPTokenAddress, msg.sender, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
+        require(_transferFromContract(targetTokenAddress, msg.sender, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
         
-        emit withdrawEvent(msg.sender, LPTokenAddress, fromLPHash, amount);
+        emit withdrawEvent(msg.sender, targetTokenAddress, LPTokenAddress, amount);
         return true;
     }
 
@@ -187,22 +206,22 @@ contract LockProxyWithLP is Ownable {
 
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
 
-        address fromLPHash = assetLPMap[originAssetAddress];
-        require(_transferFromContract(fromLPHash, toAddress, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
+        address LPTokenAddress = assetLPMap[originAssetAddress];
+        require(_transferFromContract(LPTokenAddress, toAddress, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
         
-        emit depositEvent(toAddress, originAssetAddress, fromLPHash, amount);
+        emit depositEvent(toAddress, originAssetAddress, LPTokenAddress, amount);
         return true;
     }
 
-    function withdraw(address LPTokenAddress, uint amount, address toAddress) public returns (bool) {
+    function withdraw(address targetTokenAddress, uint amount, address toAddress) public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
-        address fromLPHash = assetLPMap[LPTokenAddress];
-        require(_transferToContract(fromLPHash, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
+        address LPTokenAddress = assetLPMap[targetTokenAddress];
+        require(_transferToContract(LPTokenAddress, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
 
-        require(_transferFromContract(LPTokenAddress, toAddress, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
+        require(_transferFromContract(targetTokenAddress, toAddress, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
         
-        emit withdrawEvent(toAddress, LPTokenAddress, fromLPHash, amount);
+        emit withdrawEvent(toAddress, targetTokenAddress, LPTokenAddress, amount);
         return true;
     }
 
