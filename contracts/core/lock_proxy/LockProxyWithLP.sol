@@ -177,7 +177,7 @@ contract LockProxyWithLP is Ownable {
     }
 
 
-    function deposit(address originAssetAddress, uint amount) public returns (bool) {
+    function deposit(address originAssetAddress, uint amount) payable public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
@@ -201,7 +201,7 @@ contract LockProxyWithLP is Ownable {
         return true;
     }
 
-    function deposit(address originAssetAddress, uint amount, address toAddress) public returns (bool) {
+    function deposit(address originAssetAddress, uint amount, address toAddress) payable public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
