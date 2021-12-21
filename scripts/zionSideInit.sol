@@ -5,7 +5,7 @@ hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
 async function main() {
-    [deployer, deployer2] = await hre.ethers.getSigners();
+    [admin, creator] = await hre.ethers.getSigners();
   
     // check if given networkId is registered
     await getPolyChainId().then((polyId) => {
@@ -13,33 +13,48 @@ async function main() {
     }).catch((error) => {
       throw error;
     });
-
+    
+    const nativeLockProxy = '0x7d79D936DA7833c7fe056eB450064f34A327DcA8';
     const polyId = await getPolyChainId();
+
+    const Empty = await ethers.getContractFactory("empty");
+    const CCMP = await hre.ethers.getContractFactory("EthCrossChainManager");
     const LockProxy = await ethers.getContractFactory("LockProxy");
     const ECCD = await hre.ethers.getContractFactory("EthCrossChainData");
     const CallerFactory = await hre.ethers.getContractFactory("CallerFactory");
     const CCM = await hre.ethers.getContractFactory("EthCrossChainManagerImplementation");
-    const CCMP = await hre.ethers.getContractFactory("EthCrossChainManager");
     const WrapperV1 = await hre.ethers.getContractFactory("PolyWrapperV1");
     const WrapperV2 = await hre.ethers.getContractFactory("PolyWrapperV2");
 
-    console.log("\nStart , deployer:".cyan, deployer.address.blue);
+    console.log("\nStart , admin:".cyan, admin.address.blue);
+
+    // deploy empty
+    console.log("\ndeploy Empty ......".cyan);
+    const empty = await Empty.connect(creator).deploy();
+    await empty.deployed();
+    console.log("Empty deployed to:".green, empty.address.blue);
+    
+    // deploy EthCrossChainManager
+    console.log("\ndeploy EthCrossChainManager ......".cyan);
+    const ccmp = await CCMP.connect(creator).deploy(empty.address,admin.address,'0x');
+    await ccmp.deployed();
+    console.log("EthCrossChainManager deployed to:".green, ccmp.address.blue);
     
     // deploy LockProxy
     console.log("\ndeploy LockProxy ......".cyan);
-    const lockProxy = await LockProxy.deploy();
+    const lockProxy = await LockProxy.connect(admin).deploy();
     await lockProxy.deployed();
     console.log("LockProxy deployed to:".green, lockProxy.address.blue);
   
     // deploy EthCrossChainData
     console.log("\ndeploy EthCrossChainData ......".cyan);
-    const eccd = await ECCD.deploy();
+    const eccd = await ECCD.connect(admin).deploy({gasLimit: 8000000});
     await eccd.deployed();
     console.log("EthCrossChainData deployed to:".green, eccd.address.blue);
     
     // deploy CallerFactory
     console.log("\ndeploy CallerFactory ......".cyan);
-    const cf = await CallerFactory.deploy([lockProxy.address]);
+    const cf = await CallerFactory.connect(admin).deploy([lockProxy.address, nativeLockProxy]);
     await cf.deployed();
     console.log("CallerFactory deployed to:".green, cf.address.blue);
     
@@ -51,42 +66,42 @@ async function main() {
     
     // deploy EthCrossChainManagerImplementation
     console.log("\ndeploy EthCrossChainManagerImplementation ......".cyan);
-    const ccm = await CCM.deploy();
+    const ccm = await CCM.connect(admin).deploy();
     await ccm.deployed();
     console.log("EthCrossChainManagerImplementation deployed to:".green, ccm.address.blue);
     
-    // deploy EthCrossChainManager
-    console.log("\ndeploy EthCrossChainManager ......".cyan);
-    const ccmp = await CCMP.deploy(ccm.address,deployer.address,'0x');
-    await ccmp.deployed();
-    console.log("EthCrossChainManager deployed to:".green, ccmp.address.blue);
+    // setup EthCrossChainManager
+    console.log("\nsetup EthCrossChainManager ......".cyan);
+    tx = await ccmp.connect(admin).upgradeTo(ccm.address);
+    await tx.wait();
+    console.log("set".green);
   
     // transfer ownership
     console.log("\ntransfer eccd's ownership to ccm ......".cyan);
-    tx = await eccd.transferOwnership(ccmp.address);
+    tx = await eccd.connect(admin).transferOwnership(ccmp.address);
     await tx.wait();
     console.log("ownership transferred".green);
 
     // setup contracts
     console.log("\nsetup LockProxy ......".cyan);
-    tx = await lockProxy.setManagerProxy(ccmp.address);
+    tx = await lockProxy.connect(admin).setManagerProxy(ccmp.address);
     await tx.wait();
     console.log("LockProxy set".green);
 
     // deploy wrapper
     console.log("\ndeploy PolyWrapperV1 ......".cyan);
-    const wrapper1 = await WrapperV1.deploy(deployer.address, polyId);
+    const wrapper1 = await WrapperV1.deploy(admin.address, polyId);
     await wrapper1.deployed();
     console.log("PolyWrapperV1 deployed to:".green, wrapper1.address.blue);
   
     console.log("\ndeploy PolyWrapperV2 ......".cyan);
-    const wrapper2 = await WrapperV2.deploy(deployer.address, polyId);
+    const wrapper2 = await WrapperV2.deploy(admin.address, polyId);
     await wrapper2.deployed();
     console.log("PolyWrapperV2 deployed to:".green, wrapper2.address.blue);
     
     // setup wrapper
     console.log("\nsetup WrapperV1 ......".cyan);
-    tx = await wrapper1.setFeeCollector(deployer.address);
+    tx = await wrapper1.setFeeCollector(admin.address);
     await tx.wait();
     console.log("setFeeCollector Done".green);
     tx = await wrapper1.setLockProxy(lockProxy.address);
@@ -94,7 +109,7 @@ async function main() {
     console.log("setLockProxy Done".green);
   
     console.log("\nsetup WrapperV2 ......".cyan);
-    tx = await wrapper2.setFeeCollector(deployer.address);
+    tx = await wrapper2.setFeeCollector(admin.address);
     await tx.wait();
     console.log("setFeeCollector Done".green);
     tx = await wrapper2.setLockProxy(lockProxy.address);
@@ -128,51 +143,44 @@ async function getPolyChainId() {
   const chainId = await hre.web3.eth.getChainId();
   switch (chainId) {
     
-    // mainnet
-    case 1: // eth-main
-      return 2;
-    case 56: // bsc-main
-      return 6;
-    case 128: // heco-main
-      return 7;
-    case 137: // polygon-main
-      return 17;
-    case 66: // ok-main
-      return 12;
-    case 1718: // plt-main
-      return 8;
+    // // mainnet
+    // case 1: // eth-main
+    //   return 2;
+    // case 56: // bsc-main
+    //   return 6;
+    // case 128: // heco-main
+    //   return 7;
+    // case 137: // polygon-main
+    //   return 17;
+    // case 66: // ok-main
+    //   return 12;
+    // case 1718: // plt-main
+    //   return 8;
 
-    // testnet
-    case 3: // ropsten
-      return 202;
-    case 4: // rinkeby
-      return 402;
-    case 5: // goerli
-      return 502;
-    case 42: // kovan
-      return 302;
-    case 97: // bsc-test
-      return 1000006;
-    case 256: // heco-test
-      return 7;
-    case 80001: // polygon-test
-      return 216;
-    case 65: // ok-test
-      return 200;
-    case 421611: // arbitrum-test
-      return 300;
-    case 4002: // ftm-test
-      return 400;
-    case 43113: // avax-test
-      return 500;
-    case 77: // xdai-test
-      return 600;
-    case 69: // op-test
-      return 200;
-    case 101: // plt-test
-      return 208;
-    case 31091: // curve-test
-      return 210;
+    // // testnet
+    // case 3: // eth-test
+    //   return 2;
+    // case 97: // bsc-test
+    //   return 79;
+    // case 256: // heco-test
+    //   return 7;
+    // case 80001: // polygon-test
+    //   return 216;
+    // case 65: // ok-test
+    //   return 200;
+    // case 421611: // arbitrum-test
+    //   return 205;
+    // case 77: // xdai-test
+    //   return 206;
+    // case 69: // op-test
+    //   return 207;
+    // case 101: // plt-test
+    //   return 208;
+    // case 31091: // curve-test
+    //   return 210;
+
+    case 108:
+      return 77;
 
     // hardhat devnet
     case 31337:
