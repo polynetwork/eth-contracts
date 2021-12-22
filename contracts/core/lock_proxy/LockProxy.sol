@@ -148,8 +148,8 @@ contract LockProxy is Ownable {
             // convert toAddress from 'address' type to 'address payable' type, then actively transfer ether
             address(uint160(toAddress)).transfer(amount);
         } else {
-            // actively transfer amount of asset from msg.sender to lock_proxy contract 
-            require(_transferERC20FromContract(toAssetHash, toAddress, amount), "transfer erc20 asset to lock_proxy contract failed!");
+            // actively transfer amount of asset from lock_proxy contract to toAddress
+            require(_transferERC20FromContract(toAssetHash, toAddress, amount), "transfer erc20 asset from lock_proxy contract to toAddress failed!");
         }
         return true;
     }
