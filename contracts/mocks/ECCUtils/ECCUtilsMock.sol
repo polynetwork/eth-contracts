@@ -45,12 +45,6 @@ contract ECCUtilsMock {
         return ECCUtils.getCrossTxStorageSlot(ctx);
     }
 
-    function getEpochInfoStorageSlot(uint64 epochId) public pure returns(bytes memory slotIndex) {
-        ECCUtils.EpochInfo memory ei;
-        ei.epochId = epochId;
-        return ECCUtils.getEpochInfoStorageSlot(ei);
-    }
-
     // little endian
     function getUint64Bytes(uint64 num) public pure returns(bytes8 res) {
         return ECCUtils.getUint64Bytes(num);
@@ -79,6 +73,10 @@ contract ECCUtilsMock {
     function bytesToAddress(bytes memory _bs) public pure returns (address addr) {
         return ECCUtils.bytesToAddress(_bs);
     }
+
+    function getHeaderValidators(bytes memory rawHeader) public view returns(address[] memory validators) {
+        return ECCUtils.getHeaderValidators(rawHeader);
+    }
     
     function decodeValidators(bytes memory validatorBytes) public pure returns(address[] memory validators) {
         return ECCUtils.decodeValidators(validatorBytes);
@@ -86,15 +84,6 @@ contract ECCUtilsMock {
     
     function encodeValidators(address[] memory validators) public pure returns(bytes memory validatorBytes) {
         return ECCUtils.encodeValidators(validators);
-    }
-
-    function decodeEpochInfo(bytes memory rawEpochInfo) public pure returns(
-        uint64  epochStartHeight,
-        uint64  epochId,
-        address[] memory validators
-    ){
-        ECCUtils.EpochInfo memory tmp = ECCUtils.decodeEpochInfo(rawEpochInfo);
-        return (tmp.epochStartHeight, tmp.epochId, tmp.validators);
     }
     
     function encodeTxParam(
