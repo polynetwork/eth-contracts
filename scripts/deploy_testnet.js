@@ -1,4 +1,3 @@
-const { ethers } = require("hardhat");
 const hre = require("hardhat");
 const fs = require("fs");
 const Web3 = require("web3");
@@ -82,6 +81,7 @@ async function main() {
   tx = await wrapper.setLockProxy(lockproxy.address);
   await tx.wait();
   console.log("setLockProxy Done".green);
+  
 
   console.log("\nDone.\n".magenta);
 
@@ -110,8 +110,14 @@ async function getPolyChainId() {
     //   return ;
 
     // testnet
-    case 3: // eth-test
+    case 3: // ropsten-test
       return 2;
+    case 4: // rinkeby
+      return 402;
+    case 5: // goerli
+      return 502;
+    case 42: // kovan
+      return 302;
     case 97: // bsc-test
       return 79;
     case 256: // heco-test
@@ -130,6 +136,8 @@ async function getPolyChainId() {
         return 208;
     case 43113: // avax-test
         return 209;
+    case 666: // pixie-test
+        return 320;
 
     // hardhat devnet
     case 31337:

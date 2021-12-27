@@ -30,3 +30,5 @@ apidoc/
 node_modules
 
 artifacts/
+hardhat.config.js
+cache/
