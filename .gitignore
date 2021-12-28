@@ -30,3 +30,4 @@ apidoc/
 node_modules
 
 artifacts/
+config.json
