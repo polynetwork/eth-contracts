@@ -6,10 +6,11 @@ import "./../../libs/common/ZeroCopySource.sol";
 import "./../../libs/common/ZeroCopySink.sol";
 import "./../../libs/utils/Utils.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
+import "./../../libs/lifecycle/Pausable.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 
-contract LockProxyWithLP is Ownable {
+contract LockProxyWithLP is Ownable, Pausable {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
@@ -38,6 +39,15 @@ contract LockProxyWithLP is Ownable {
         IEthCrossChainManagerProxy ieccmp = IEthCrossChainManagerProxy(managerProxyContract);
         require(_msgSender() == ieccmp.getEthCrossChainManager(), "msgSender is not EthCrossChainManagerContract");
         _;
+    }
+
+    function pause() onlyOwner whenNotPaused public returns (bool) {
+        _pause();
+        return true;
+    }
+    function unpause() onlyOwner whenPaused public returns (bool) {
+        _unpause();
+        return true;
     }
     
     function setManagerProxy(address ethCCMProxyAddr) onlyOwner public {
@@ -177,51 +187,29 @@ contract LockProxyWithLP is Ownable {
     }
 
 
-    function deposit(address originAssetAddress, uint amount) payable public returns (bool) {
+    function deposit(address originAssetAddress, uint amount) whenNotPaused payable public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
 
         address LPTokenAddress = assetLPMap[originAssetAddress];
+        require(LPTokenAddress != address(0), "do not support deposite this token");
         require(_transferFromContract(LPTokenAddress, msg.sender, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
         
         emit depositEvent(msg.sender, originAssetAddress, LPTokenAddress, amount);
         return true;
     }
 
-    function withdraw(address targetTokenAddress, uint amount) public returns (bool) {
+    function withdraw(address targetTokenAddress, uint amount) whenNotPaused public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
 
         address LPTokenAddress = assetLPMap[targetTokenAddress];
+        require(LPTokenAddress != address(0), "do not support withdraw this token");
         require(_transferToContract(LPTokenAddress, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
 
         require(_transferFromContract(targetTokenAddress, msg.sender, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
         
         emit withdrawEvent(msg.sender, targetTokenAddress, LPTokenAddress, amount);
-        return true;
-    }
-
-    function deposit(address originAssetAddress, uint amount, address toAddress) payable public returns (bool) {
-        require(amount != 0, "amount cannot be zero!");
-
-        require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
-
-        address LPTokenAddress = assetLPMap[originAssetAddress];
-        require(_transferFromContract(LPTokenAddress, toAddress, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
-        
-        emit depositEvent(toAddress, originAssetAddress, LPTokenAddress, amount);
-        return true;
-    }
-
-    function withdraw(address targetTokenAddress, uint amount, address toAddress) public returns (bool) {
-        require(amount != 0, "amount cannot be zero!");
-
-        address LPTokenAddress = assetLPMap[targetTokenAddress];
-        require(_transferToContract(LPTokenAddress, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
-
-        require(_transferFromContract(targetTokenAddress, toAddress, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
-        
-        emit withdrawEvent(toAddress, targetTokenAddress, LPTokenAddress, amount);
         return true;
     }
 
