@@ -67,14 +67,13 @@
 			"Provider": "https://data-seed-prebsc-1-s1.binance.org:8545/",
 			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
 			"EthCrossChainData": "0x7614A4819cd5226886E06647287E3ADf0CC14756",
-			"EthCrossChainManagerImplementation": "0x0EAe636a1507CFb7317E1a14F637f7B71c4Cc9f9",
+			"EthCrossChainManagerImplementation": "0x6849D4D5F65309d74Fec483A858EC96bD1f902d5",
 			"EthCrossChainManager": "0xcBC84F846C4afABd5A8aDcef92B40c1C4448f31A",
 			"CallerFactory": "0x13ea6bF39fa8241646ca7080445c40e4AA4F24df",
 			"LockProxy": "0x469247CB5385587191B2f4FcFb6353833De335e0",
 			"Swapper": "0x0000000000000000000000000000000000000000",
 			"Wrapper": "0x90275C268a1A3C96c964C3d68D6Aed0cF7BbC2e0",
-			"WrapperV1": "0x0000000000000000000000000000000000000000",
-			"EthCrossChainManagerImplemetation": "0xc4D247Bfa8e67FC7dA6241216af5069A1bD7B7aA"
+			"WrapperV1": "0x0000000000000000000000000000000000000000"
 		},
 		{
 			"Name": "heco_test",

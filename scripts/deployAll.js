@@ -112,7 +112,7 @@ async function main() {
     config.Provider = hre.config.networks[config.Name].url
     config.Deployer = deployer.address
     config.EthCrossChainData = eccd.address
-    config.EthCrossChainManagerImplemetation = ccm.address
+    config.EthCrossChainManagerImplementation = ccm.address
     config.EthCrossChainManager = ccmp.address
     config.CallerFactory = cf.address
     config.LockProxy = lockProxy.address

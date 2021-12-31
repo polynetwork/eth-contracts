@@ -61,7 +61,7 @@ async function main() {
 
     // write config
     console.log("\nwrite config ......".cyan);
-    config.EthCrossChainManagerImplemetation = ccmi.address
+    config.EthCrossChainManagerImplementation = ccmi.address
     console.log("constract output:\n".cyan,config);
     await writeConfig(config)
     console.log("\nwrite config done\n".green);
