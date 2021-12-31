@@ -4,23 +4,23 @@ const fs = require("fs");
 hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
+var configPath = './zionDevConfig.json'
+
 async function main() {
     [deployer, deployer2] = await hre.ethers.getSigners();
-    var polyID;
-    var ChainName;
-
-    // check if given networkId is registered
-    await getPolyChainId().then((polyIDandName) => {
-      console.log("\nDeploy contracts on chain with Poly_Chain_Id:".cyan, polyIDandName);
-      polyID= polyIDandName[0]
-      ChainName=polyIDandName[1]
-    }).catch((error) => {
-      throw error;
+    const netwrokId = await hre.web3.eth.getChainId();
+    var config
+    await readConfig(netwrokId).then((netConfig) => {
+        config = netConfig
+    }).catch((err) => {
+        console.error(err);
+        process.exit(1);
     });
-    NetProvider=hre.config.networks[ChainName].url
-    console.log(NetProvider)
+    if (config.PolyChainID === undefined) {
+        console.error("unknown network: invalid PolyChainID".red);
+        process.exit(1);
+    }
 
-    //const polyId = await getPolyChainId();
     const LockProxy = await ethers.getContractFactory("LockProxy");
     const ECCD = await hre.ethers.getContractFactory("EthCrossChainData");
     const CallerFactory = await hre.ethers.getContractFactory("CallerFactory");
@@ -51,7 +51,7 @@ async function main() {
     
     // update Const.sol
     console.log("\nupdate Const.sol ......".cyan);
-    await updateConst(eccd.address, cf.address);
+    await updateConst(config.PolyChainID, eccd.address, cf.address);
     console.log("Const.sol updated".green);
     await hre.run('compile');
     
@@ -81,12 +81,12 @@ async function main() {
 
     // deploy wrapper
     console.log("\ndeploy PolyWrapperV1 ......".cyan);
-    const wrapper1 = await WrapperV1.deploy(deployer.address, polyID);
+    const wrapper1 = await WrapperV1.deploy(deployer.address, config.PolyChainID);
     await wrapper1.deployed();
     console.log("PolyWrapperV1 deployed to:".green, wrapper1.address.blue);
   
     console.log("\ndeploy PolyWrapperV2 ......".cyan);
-    const wrapper2 = await WrapperV2.deploy(deployer.address, polyID);
+    const wrapper2 = await WrapperV2.deploy(deployer.address, config.PolyChainID);
     await wrapper2.deployed();
     console.log("PolyWrapperV2 deployed to:".green, wrapper2.address.blue);
     
@@ -107,48 +107,25 @@ async function main() {
     await tx.wait();
     console.log("setLockProxy Done".green);
 
-    console.log("\nDone.\n".magenta);
+    // write config
+    console.log("\nwrite config ......".cyan);
+    config.Provider = hre.config.networks[config.Name].url
+    config.Deployer = deployer.address
+    config.EthCrossChainData = eccd.address
+    config.EthCrossChainManagerImplemetation = ccm.address
+    config.EthCrossChainManager = ccmp.address
+    config.CallerFactory = cf.address
+    config.LockProxy = lockProxy.address
+    config.WrapperV1 = wrapper1.address
+    config.Wrapper = wrapper2.address
+    console.log("constract output:\n".cyan,config);
+    await writeConfig(config)
+    console.log("\nwrite config done\n".green);
 
-   //output json 
-    var config = {
-      Name: ChainName,
-      PolyChainID : polyID,
-      Provider: NetProvider, 
-      Deployer:deployer.address,  
-      EthCrossChainData : eccd.address,      
-      EthCrossChainManagerImplemetation : ccm.address,
-      EthCrossChainManager: ccmp.address,
-      CallerFactory:cf.address,
-      LockProxy: lockProxy.address,
-      Swapper:"0x0000000000000000000000000000000000000000",
-      Wrapper:wrapper1.address,
-      WrapperV2:wrapper2.address,
-    };
-    console.log("\nconstract output\n",config);
-  //read previous config
-    let data=fs.readFileSync("./zionDevConfig.json",(err,data)=>{
-        if (err) {
-          throw err;
-        }else{
-          previous=data.toString();
-        }  
-    });
-   //add new config
-   //var buffer=JSON.stringify(data)
-    var json=JSON.parse(data.toString())
-    json.Network[json.Network.length]=config
-    var jsonConfig =JSON.stringify(json,null,"\t")
-    var outputPath = './zionDevConfig.json';
-    //console.log("\njson output\n",jsonConfig);
-    try {
-      fs.writeFileSync(outputPath, jsonConfig);
-    } catch (err) {
-      console.error(err);
-    }
+    console.log("\nDone.\n".magenta);
 }
 
-async function updateConst(eccd, callerFactory) {
-    const polyChainId = await getPolyChainId();
+async function updateConst(polyChainId, eccd, callerFactory) {
   
     fs.writeFileSync('./contracts/core/cross_chain_manager/logic/Const.sol', 
     'pragma solidity ^0.5.0;\n'+
@@ -157,75 +134,63 @@ async function updateConst(eccd, callerFactory) {
     '    \n'+
     '    address constant EthCrossChainDataAddress = '+eccd+'; \n'+
     '    address constant EthCrossChainCallerFactoryAddress = '+callerFactory+'; \n'+
-    '    uint constant chainId = '+polyChainId[0]+'; \n}', 
+    '    uint constant chainId = '+polyChainId+'; \n}', 
     function(err) {
-      if (err) {
-          console.error(err);
-          process.exit(1);
-      }
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }
     }); 
-  }
+}
 
-async function getPolyChainId() {
-  const chainId = await hre.web3.eth.getChainId();
-  switch (chainId) {
-    
-    // mainnet
-    case 1: // eth-main
-      return [2,"mainnet"];
-    case 56: // bsc-main
-      return [6,"bsc"];
-    case 128: // heco-main
-      return [7,"heco"];
-    case 137: // polygon-main
-      return [17,"polygon"];
-    case 66: // ok-main
-      return [12,"ok"];
-    case 1718: // plt-main
-      return [8,"plt"];
+async function readConfig(networkId) {
+    let data=fs.readFileSync(configPath,(err,data)=>{
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }else{
+          previous=data.toString();
+        }  
+    });
+    var json=JSON.parse(data.toString())
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkId) {
+            return json.Networks[i]
+        }
+    }
+    console.error("network do not exisit in config".red);
+    process.exit(1);
+}
 
-    // testnet
-    case 3: // ropsten
-      return [202,"ropsten"];
-    case 4: // rinkeby
-      return [402,"rinkeby"];
-    case 5: // goerli
-      return [502,"goerli"];
-    case 42: // kovan
-      return [302,"kovan"];
-    case 97: // bsc-test
-      return [1000006,"bsc_testnet"];
-    case 256: // heco-test
-      return [7,"heco_testnet"];
-    case 80001: // polygon-test
-      return [216,"polygon_testnet"];
-    case 65: // ok-test
-      return [200,"ok_testnet"];
-    case 421611: // arbitrum-test
-      return [300,"arbitrum_testnet"];
-    case 4002: // ftm-test
-      return [400,"fantom_testnet"];
-    case 43113: // avax-test
-      return [500,"avax_testnet"];
-    case 77: // xdai-test
-      return [600,"xdai_testnet"];
-    case 69: // op-test
-      return [200,"op_testnet"];
-    case 101: // plt-test
-      return [208,"plt_testnet"];
-    case 31091: // curve-test
-      return [210,"curve_testnet"];
-    case 10897: // zion_side_dev
-      return [77,"zion_side_dev"];
-
-    // hardhat devnet
-    case 31337:
-      return 77777;
-
-    // unknown chainid
-    default: 
-      throw new Error("fail to get Poly_Chain_Id, unknown Network_Id: "+chainId);
-  }
+async function writeConfig(networkConfig) {
+    if (networkConfig.NetworkId === undefined) {
+        console.error("invalid network config".red);
+        process.exit(1);
+    }
+    let data=fs.readFileSync(configPath,(err,data)=>{
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }else{
+          previous=data.toString();
+        }  
+    });
+    var json = JSON.parse(data.toString())
+    var writeIndex = json.Networks.length + 1
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkConfig.NetworkId) {
+            writeIndex = i
+            break
+        }
+    }
+    json.Networks[writeIndex] = networkConfig
+    var jsonConfig = JSON.stringify(json,null,"\t")
+    try {
+        fs.writeFileSync(configPath, jsonConfig);
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
 }
 
 main()

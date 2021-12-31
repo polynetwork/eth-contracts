@@ -4,25 +4,30 @@ const fs = require("fs");
 hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
+var configPath = './zionDevConfig.json'
+
 async function main() {
     [admin, creator] = await hre.ethers.getSigners();
-  
-    // check if given networkId is registered
-    await getPolyChainId().then((polyId) => {
-      console.log("\nDeploy contracts on chain with Poly_Chain_Id:".cyan, polyId);
-    }).catch((error) => {
-      throw error;
+    const netwrokId = await hre.web3.eth.getChainId();
+    var config
+    await readConfig(netwrokId).then((netConfig) => {
+        config = netConfig
+    }).catch((err) => {
+        console.error(err);
+        process.exit(1);
     });
-    
-    const nativeLockProxy = '0x7d79D936DA7833c7fe056eB450064f34A327DcA8';
-    const polyId = await getPolyChainId();
+    if (config.PolyChainID === undefined) {
+        console.error("unknown network: invalid PolyChainID".red);
+        process.exit(1);
+    }
 
+    const nativeLockProxy = '0x7d79D936DA7833c7fe056eB450064f34A327DcA8';
     const Empty = await ethers.getContractFactory("empty");
-    const CCMP = await hre.ethers.getContractFactory("EthCrossChainManager");
     const LockProxy = await ethers.getContractFactory("LockProxy");
     const ECCD = await hre.ethers.getContractFactory("EthCrossChainData");
     const CallerFactory = await hre.ethers.getContractFactory("CallerFactory");
     const CCM = await hre.ethers.getContractFactory("EthCrossChainManagerImplementation");
+    const CCMP = await hre.ethers.getContractFactory("EthCrossChainManager");
     const WrapperV1 = await hre.ethers.getContractFactory("PolyWrapperV1");
     const WrapperV2 = await hre.ethers.getContractFactory("PolyWrapperV2");
 
@@ -60,7 +65,7 @@ async function main() {
     
     // update Const.sol
     console.log("\nupdate Const.sol ......".cyan);
-    await updateConst(eccd.address, cf.address);
+    await updateConst(config.PolyChainID, eccd.address, cf.address);
     console.log("Const.sol updated".green);
     await hre.run('compile');
     
@@ -90,12 +95,12 @@ async function main() {
 
     // deploy wrapper
     console.log("\ndeploy PolyWrapperV1 ......".cyan);
-    const wrapper1 = await WrapperV1.deploy(admin.address, polyId);
+    const wrapper1 = await WrapperV1.deploy(admin.address, config.PolyChainID);
     await wrapper1.deployed();
     console.log("PolyWrapperV1 deployed to:".green, wrapper1.address.blue);
   
     console.log("\ndeploy PolyWrapperV2 ......".cyan);
-    const wrapper2 = await WrapperV2.deploy(admin.address, polyId);
+    const wrapper2 = await WrapperV2.deploy(admin.address, config.PolyChainID);
     await wrapper2.deployed();
     console.log("PolyWrapperV2 deployed to:".green, wrapper2.address.blue);
     
@@ -116,80 +121,90 @@ async function main() {
     await tx.wait();
     console.log("setLockProxy Done".green);
 
+    // write config
+    console.log("\nwrite config ......".cyan);
+    config.Provider = hre.config.networks[config.Name].url
+    config.Deployer = admin.address
+    config.EthCrossChainData = eccd.address
+    config.EthCrossChainManagerImplemetation = ccm.address
+    config.EthCrossChainManager = ccmp.address
+    config.CallerFactory = cf.address
+    config.LockProxy = lockProxy.address
+    config.WrapperV1 = wrapper1.address
+    config.Wrapper = wrapper2.address
+    console.log("constract output:\n".cyan,config);
+    await writeConfig(config)
+    console.log("\nwrite config done\n".green);
+
     console.log("\nDone.\n".magenta);
 }
 
-async function updateConst(eccd, callerFactory) {
-    const polyChainId = await getPolyChainId();
+async function updateConst(polyChainId, eccd, callerFactory) {
   
-    await fs.writeFile('./contracts/core/cross_chain_manager/logic/Const.sol', 
+    fs.writeFileSync('./contracts/core/cross_chain_manager/logic/Const.sol', 
     'pragma solidity ^0.5.0;\n'+
     'contract Const {\n'+
     '    bytes constant ZionCrossChainManagerAddress = hex"5747C05FF236F8d18BB21Bc02ecc389deF853cae"; \n'+
-    '    bytes constant ZionValidaterManagerAddress = hex"A4Bf827047a08510722B2d62e668a72FCCFa232C"; \n'+
     '    \n'+
     '    address constant EthCrossChainDataAddress = '+eccd+'; \n'+
     '    address constant EthCrossChainCallerFactoryAddress = '+callerFactory+'; \n'+
     '    uint constant chainId = '+polyChainId+'; \n}', 
     function(err) {
-      if (err) {
-          console.error(err);
-          process.exit(1);
-      }
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }
     }); 
-  }
+}
 
-async function getPolyChainId() {
-  const chainId = await hre.web3.eth.getChainId();
-  switch (chainId) {
-    
-    // // mainnet
-    // case 1: // eth-main
-    //   return 2;
-    // case 56: // bsc-main
-    //   return 6;
-    // case 128: // heco-main
-    //   return 7;
-    // case 137: // polygon-main
-    //   return 17;
-    // case 66: // ok-main
-    //   return 12;
-    // case 1718: // plt-main
-    //   return 8;
+async function readConfig(networkId) {
+    let data=fs.readFileSync(configPath,(err,data)=>{
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }else{
+          previous=data.toString();
+        }  
+    });
+    var json=JSON.parse(data.toString())
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkId) {
+            return json.Networks[i]
+        }
+    }
+    console.error("network do not exisit in config".red);
+    process.exit(1);
+}
 
-    // // testnet
-    // case 3: // eth-test
-    //   return 2;
-    // case 97: // bsc-test
-    //   return 79;
-    // case 256: // heco-test
-    //   return 7;
-    // case 80001: // polygon-test
-    //   return 216;
-    // case 65: // ok-test
-    //   return 200;
-    // case 421611: // arbitrum-test
-    //   return 205;
-    // case 77: // xdai-test
-    //   return 206;
-    // case 69: // op-test
-    //   return 207;
-    // case 101: // plt-test
-    //   return 208;
-    // case 31091: // curve-test
-    //   return 210;
-
-    case 108:
-      return 77;
-
-    // hardhat devnet
-    case 31337:
-      return 77777;
-
-    // unknown chainid
-    default: 
-      throw new Error("fail to get Poly_Chain_Id, unknown Network_Id: "+chainId);
-  }
+async function writeConfig(networkConfig) {
+    if (networkConfig.NetworkId === undefined) {
+        console.error("invalid network config".red);
+        process.exit(1);
+    }
+    let data=fs.readFileSync(configPath,(err,data)=>{
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }else{
+          previous=data.toString();
+        }  
+    });
+    var json = JSON.parse(data.toString())
+    var writeIndex = json.Networks.length + 1
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkConfig.NetworkId) {
+            writeIndex = i
+            break
+        }
+    }
+    json.Networks[writeIndex] = networkConfig
+    var jsonConfig = JSON.stringify(json,null,"\t")
+    try {
+        fs.writeFileSync(configPath, jsonConfig);
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
 }
 
 main()
