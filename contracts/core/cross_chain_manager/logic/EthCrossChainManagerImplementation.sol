@@ -13,12 +13,12 @@ contract EthCrossChainManagerImplementation is Const {
     using SafeMath for uint256;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
-    event ChangeEpochEvent(uint256 height, bytes rawHeader, bytes oldValidatorSet, bytes newEpochInfo);
+    event ChangeEpochEvent(uint256 height, bytes rawHeader, address[] oldValidators, address[] newValidators);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-
+    
+    // see in Const.sol
     // address constant EthCrossChainDataAddress = 0x0000000000000000000000000000000000000000;
-    // address constant EthCrossChainCallerFactoryAddress = 0x0000000000000000000000000000000000000000;
     // bytes constant ZionCrossChainManagerAddress = "0x000000000000000000000000000000000000000000";
     // bytes constant ZionValidaterManagerAddress = "0x000000000000000000000000000000000000000000";
     // uint constant chainId = 0;
@@ -37,36 +37,21 @@ contract EthCrossChainManagerImplementation is Const {
     }
     
     function initGenesisBlock(
-        bytes memory rawHeader, 
-        bytes memory rawSeals,
-        bytes memory accountProof, 
-        bytes memory storageProof,
-        bytes memory currentEpochInfo
+        bytes memory rawHeader
     ) public returns(bool) {
         ECCUtils.Header memory header = ECCUtils.decodeHeader(rawHeader);
-        ECCUtils.EpochInfo memory curEpoch = ECCUtils.decodeEpochInfo(currentEpochInfo);
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
         // verify isInit
         require(eccd.getCurEpochValidatorPkBytes().length == 0, "EthCrossChainData contract has already been initialized!");
         
-        // verify block.height
-        require(header.number>=curEpoch.epochStartHeight, "Invalid block height");
-        
-        // verify header
-        require(ECCUtils.verifyHeader(keccak256(rawHeader), rawSeals, curEpoch.validators), "Verify header failed");
+        // get validators
+        address[] memory validators = ECCUtils.getHeaderValidators(rawHeader);
+        require(validators.length != 0, "Given block header does not contain any validator");
 
-        // get epoch info hash storage index
-        bytes memory epochInfoSlotIndex = ECCUtils.getEpochInfoStorageSlot(curEpoch);
-        
-        // verify proof
-        bytes memory storageValue = ECCUtils.verifyAccountProof(accountProof, header.root, ZionValidaterManagerAddress, storageProof, epochInfoSlotIndex);
-        require(ECCUtils.checkCacheDBStorage(ECCUtils.bytesToBytes32(storageValue), keccak256(currentEpochInfo)), "Verify proof failed");
-        
         // put epoch information
-        require(eccd.putCurEpochStartHeight(curEpoch.epochStartHeight), "Save Zion current epoch start height to Data contract failed!");
-        require(eccd.putCurEpochId(curEpoch.epochId), "Save Zion current epoch id to Data contract failed!");
-        require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(curEpoch.validators)), "Save Zion current epoch validators to Data contract failed!");
+        require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion current epoch start height to Data contract failed!");
+        require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(validators)), "Save Zion current epoch validators to Data contract failed!");
         
         emit InitGenesisBlockEvent(header.number, rawHeader);
         return true;
@@ -74,43 +59,29 @@ contract EthCrossChainManagerImplementation is Const {
     
     function changeEpoch(
         bytes memory rawHeader, 
-        bytes memory rawSeals,
-        bytes memory accountProof, 
-        bytes memory storageProof,
-        bytes memory nextEpochInfo
+        bytes memory rawSeals
     ) public returns(bool) {
         ECCUtils.Header memory header = ECCUtils.decodeHeader(rawHeader);
-        ECCUtils.EpochInfo memory nextEpoch = ECCUtils.decodeEpochInfo(nextEpochInfo);
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
         
         // verify block.height
         require(header.number>=eccd.getCurEpochStartHeight(), "Given block height is lower than current epoch start height");
-        require(header.number==nextEpoch.epochStartHeight-1, "Given block must be the last block of current epoch");
-
-        // verify epochId
-        require(nextEpoch.epochId==eccd.getCurEpochId()+1, "Given epoch is not the next epoch of current one");
         
         // verify header
         bytes memory curPkBytes = eccd.getCurEpochValidatorPkBytes();
         address[] memory validators = ECCUtils.decodeValidators(curPkBytes);
+        address[] memory newValidators = ECCUtils.getHeaderValidators(rawHeader);
+        require(newValidators.length != 0, "Given block header does not contain any validator");
         require(ECCUtils.verifyHeader(keccak256(rawHeader), rawSeals, validators), "Verify header failed");
-
-        // get epoch info hash storage index
-        bytes memory epochInfoSlotIndex = ECCUtils.getEpochInfoStorageSlot(nextEpoch);
-        
-        // verify proof
-        bytes memory storageValue = ECCUtils.verifyAccountProof(accountProof, header.root, ZionValidaterManagerAddress, storageProof, epochInfoSlotIndex);
-        require(ECCUtils.checkCacheDBStorage(ECCUtils.bytesToBytes32(storageValue), keccak256(nextEpochInfo)), "Verify proof failed");
         
         // put new epoch info
-        require(eccd.putCurEpochStartHeight(nextEpoch.epochStartHeight), "Save Zion next epoch height to Data contract failed!");
-        require(eccd.putCurEpochId(nextEpoch.epochId), "Save Zion next epoch id to Data contract failed!");
-        require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(nextEpoch.validators)), "Save Zion next epoch validators to Data contract failed!");
+        require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion next epoch height to Data contract failed!");
+        require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(newValidators)), "Save Zion next epoch validators to Data contract failed!");
         
-        emit ChangeEpochEvent(header.number, rawHeader, curPkBytes, nextEpochInfo);
+        emit ChangeEpochEvent(header.number, rawHeader, validators, newValidators);
         return true;
     }
-   
+    
     function crossChain(
         uint64 toChainId, 
         bytes calldata toContract, 

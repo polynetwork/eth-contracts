@@ -177,11 +177,25 @@ describe("ECCUtils", function () {
         let rawHeader = '0xf90271a09ba4f263f431924b824b315667fa55a934653b1bc59f2cff8a3f9eaacf45fd0ca01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794258af48e28e4a6846e931ddff8e1cdf8579821e5a0bfc1711d4a46f45c2422bc0c97c3a3e69ab5429b340f4a6f92224bfe0e1fed4da056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010d84fcc4db9f8084614bf970b87bd983010a04846765746888676f312e31362e328664617277696e000000000000f859f85494258af48e28e4a6846e931ddff8e1cdf8579821e5948c09d936a1b408d6e0afaa537ba4e06c4504a0ae94c095448424a5ecd5ca7ccdadfaad127a9d7e88ec94d47a4e56e9262543db39d9203cf1a2e53735f83480c080a063746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365880000000000000000';
         let root = '0xbfc1711d4a46f45c2422bc0c97c3a3e69ab5429b340f4a6f92224bfe0e1fed4d';
         let number = 0xd;
+        let validators = [
+            '0x258af48e28E4A6846E931dDfF8e1Cdf8579821e5',
+            '0x8c09D936a1B408D6e0afAA537ba4E06c4504a0AE',
+            '0xC095448424A5ECd5cA7CcDaDFaAD127a9d7E88ec',
+            '0xD47a4e56e9262543Db39d9203CF1a2e53735f834'
+        ]
 
         it("Should return block.root and block.number", async function () {
             let header = await eccu.decodeHeader(rawHeader);
             expect(header.root).to.equal(root);
             expect(header.number).to.equal(number);
+        });
+
+        it("Should return block.extra.validatorSet", async function () {
+            let res = await eccu.getHeaderValidators(rawHeader);
+            expect(res.length).to.equal(validators.length);
+            for (let i=0; i<res.length; i++) {
+                expect(res[i]).to.equal(validators[i]);
+            }
         });
 
     });
@@ -201,16 +215,6 @@ describe("ECCUtils", function () {
 
         it("Should return correct slot index", async function () {
             expect(await eccu.getCrossTxStorageSlot(zionTxHash, toChainId)).to.equal(slotIndex);
-        });
-
-    });
-    
-    describe("getEpochInfoStorageSlot", function () {
-        let epochId = 7;
-        let slotIndex = '0x488514fb1eabb3a12071864c785691311eb6bd83cd3f93bdbc64732733d27ffa';
-
-        it("Should return correct slot index", async function () {
-            expect(await eccu.getEpochInfoStorageSlot(epochId)).to.equal(slotIndex);
         });
 
     });
@@ -288,16 +292,6 @@ describe("ECCUtils", function () {
 
         it("encodeValidators", async function () {
             expect(await eccu.encodeValidators(validators)).to.equal(rawValidatorBytes);
-        });
-
-        it("decodeEpochInfo", async function () {
-            let res = await eccu.decodeEpochInfo(rawEpochInfo);
-            expect(res.epochStartHeight).to.equal(epochStartHeight);
-            expect(res.epochId).to.equal(epochId);
-            expect(res.validators[0]).to.equal(peersAddress[0]);
-            expect(res.validators[1]).to.equal(peersAddress[1]);
-            expect(res.validators[2]).to.equal(peersAddress[2]);
-            expect(res.validators[3]).to.equal(peersAddress[3]);
         });
 
         it("encodeTxParam", async function () {

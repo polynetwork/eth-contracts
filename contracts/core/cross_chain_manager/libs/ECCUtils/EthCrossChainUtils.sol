@@ -7,6 +7,7 @@ library ECCUtils {
 
     uint constant ZION_SEAL_LEN = 67; // rlpPrefix: 2 , r: 32 , s:32 , v:1
     uint constant ZION_PEER_LEN = 93; // rlpPrefix: 2 , pk_rlp: 70 , address_rlp: 21
+    uint constant ZION_ADDRESS_LEN = 21; // rlpPrefix: 1 , address: 20
 
     struct Header {
         bytes    root;
@@ -27,12 +28,6 @@ library ECCUtils {
         bytes toContract;
         bytes method;
         bytes args;
-    }
-
-    struct EpochInfo {
-        uint64   epochId;
-        uint64   epochStartHeight;
-        address[] validators;
     }
     
     // will change memory (rawSeals)
@@ -101,13 +96,6 @@ library ECCUtils {
     function getCrossTxStorageSlot(CrossTx memory ctx) internal pure returns(bytes memory slotIndex) {
         return bytes32ToBytes(keccak256(abi.encodePacked(bytes7(0x72657175657374), getUint64Bytes(ctx.crossTxParam.toChainId), ctx.txHash)));
     }
-
-    // []byte("st_proof") = 73745f70726f6f66
-    // EpochProofDigest = e4bf3526f07c80af3a5de1411dd34471c71bdd5d04eedbfa1040da2c96802041
-    function getEpochInfoStorageSlot(EpochInfo memory ei) internal pure returns(bytes memory slotIndex) {
-        bytes32 epochProofHash = keccak256(abi.encodePacked(hex'e4bf3526f07c80af3a5de1411dd34471c71bdd5d04eedbfa1040da2c96802041' ,getUint64Bytes(ei.epochId)));
-        return bytes32ToBytes(keccak256(abi.encodePacked(bytes8(0x73745f70726f6f66),epochProofHash)));
-    }
     
     // little endian
     function getUint64Bytes(uint64 num) internal pure returns(bytes8 res) {
@@ -173,6 +161,26 @@ library ECCUtils {
             addr := mload(add(_bs, 0x14))
         }
     }
+
+    function getHeaderValidators(bytes memory rawHeader) internal view returns(address[] memory validators) {
+        uint size;
+        
+        (,uint offset) = rlpReadKind(rawHeader,0x20);
+        (size,offset) = rlpReadKind(rawHeader, offset + 445 ); // position of Difficulty
+        (size,offset) = rlpReadKind(rawHeader, offset + size); // position of Number
+        (size,offset) = rlpReadKind(rawHeader, offset + size); // position of GasLimit
+        (size,offset) = rlpReadKind(rawHeader, offset + size); // position of GasUsed
+        (size,offset) = rlpReadKind(rawHeader, offset + size); // position of Time
+        (bytes memory extra,) = rlpGetNextBytes(rawHeader, offset + size);
+        (bytes memory validatorsBytes,) = rlpGetNextBytes(extra, 0x40);
+        (size, offset) = rlpReadKind(validatorsBytes, 0x20);
+        require(size%ZION_ADDRESS_LEN==0,"invalid header extra validatorSet");
+        validators = new address[](size/ZION_ADDRESS_LEN);
+        for (uint i = 0; i*ZION_ADDRESS_LEN<size; i++) {
+            (address valAddr,) = rlpGetNextAddress(validatorsBytes, offset + i*ZION_ADDRESS_LEN);
+            validators[i] = valAddr;
+        }
+    }
     
     function decodeHeader(bytes memory rawHeader) internal view returns(Header memory header) {
         uint size;
@@ -189,25 +197,6 @@ library ECCUtils {
     
     function encodeValidators(address[] memory validators) internal pure returns(bytes memory validatorBytes) {
         validatorBytes = abi.encode(validators);
-    }
-
-    function decodeEpochInfo(bytes memory rawEpochInfo) internal pure returns(EpochInfo memory info) {
-        uint i = 0;
-        uint size;
-
-        (,uint offset) = rlpReadKind(rawEpochInfo,0x20);
-        (info.epochId, offset) = rlpGetNextUint64(rawEpochInfo, offset);
-
-        (, offset) = rlpReadKind(rawEpochInfo, offset);
-        (size, offset) = rlpReadKind(rawEpochInfo, offset);
-        require(size%ZION_PEER_LEN==0,"invalid rawEpochInfo");
-        info.validators = new address[](size/ZION_PEER_LEN);
-        for (;offset<size;offset+=ZION_PEER_LEN) {
-            (address peerAddr,) = rlpGetNextAddress(rawEpochInfo, offset+72);
-            info.validators[i++] = peerAddr;
-        }
-
-        (info.epochStartHeight,) = rlpGetNextUint64(rawEpochInfo, offset);
     }
     
     function encodeTxParam(
