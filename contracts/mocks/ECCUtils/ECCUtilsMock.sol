@@ -159,10 +159,6 @@ contract ECCUtilsMock {
         (res,_offset) = ECCUtils.rlpGetNextUint256(raw, offset);
         return (res,_offset,raw);
     } 
-
-    function checkCacheDBStorage(bytes32 storageValue, bytes32 expectHash) public pure returns (bool isEqual){
-        return ECCUtils.checkCacheDBStorage(storageValue, expectHash);
-    }
     
     function verifyAccountProof(
         bytes memory _accountProof, 

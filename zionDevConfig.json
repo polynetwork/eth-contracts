@@ -67,7 +67,7 @@
 			"Provider": "https://data-seed-prebsc-1-s1.binance.org:8545/",
 			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
 			"EthCrossChainData": "0x7614A4819cd5226886E06647287E3ADf0CC14756",
-			"EthCrossChainManagerImplementation": "0x6849D4D5F65309d74Fec483A858EC96bD1f902d5",
+			"EthCrossChainManagerImplementation": "0x90Ad965990f082E17fF083E28e1287625df33bE7",
 			"EthCrossChainManager": "0xcBC84F846C4afABd5A8aDcef92B40c1C4448f31A",
 			"CallerFactory": "0x13ea6bF39fa8241646ca7080445c40e4AA4F24df",
 			"LockProxy": "0x469247CB5385587191B2f4FcFb6353833De335e0",
@@ -82,7 +82,7 @@
 			"Provider": "https://http-testnet.hecochain.com",
 			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
 			"EthCrossChainData": "0x34C93432Fcdd07Fc028e86A1E0130B35f15A041f",
-			"EthCrossChainManagerImplementation": "0x81DF92E53320A2420DaB30841C31ac9637E19cb3",
+			"EthCrossChainManagerImplementation": "0xcF66fb4Edde1e808217A322545DFF5dA51d84358",
 			"EthCrossChainManager": "0xDfBF194DaFDaaB965470F46Fb17911B4ABb246B7",
 			"CallerFactory": "0x301e5dF3B55BCa792D5287294B533e26Fc59E86b",
 			"LockProxy": "0x499d9524827977FEebbcC9c5ddBbea246A974845",
@@ -209,19 +209,6 @@
 			"Swapper": "0x0000000000000000000000000000000000000000",
 			"Wrapper": "0x412fA3Ab81d5D57089346ccFeb5c52f6d1ed42E1",
 			"WrapperV1": "0x9f9F15CC407F7b26f55D71D43f993580a9107007"
-		},
-		{
-			"Name": "hardhat",
-			"NetworkId": 31337,
-			"PolyChainID": 77777,
-			"Deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-			"EthCrossChainData": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-			"EthCrossChainManagerImplemetation": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-			"EthCrossChainManager": "0x71C95911E9a5D330f4D621842EC243EE1343292e",
-			"CallerFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-			"LockProxy": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-			"WrapperV1": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-			"Wrapper": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
 		}
 	]
 }

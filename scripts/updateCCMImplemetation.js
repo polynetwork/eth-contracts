@@ -4,13 +4,13 @@ const fs = require("fs");
 hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
-var configPath = './zionDevConfig.json'
+var configPath = './devConfig.json'
 
 async function main() {
     [admin] = await hre.ethers.getSigners();
     const netwrokId = await hre.web3.eth.getChainId();
     var config
-    await readConfig(netwrokId).then((netConfig) => {
+    await readConfig(hre.network.name).then((netConfig) => {
         config = netConfig
     }).catch((err) => {
         console.error(err);
@@ -87,27 +87,37 @@ async function updateConst(polyChainId, eccd, callerFactory) {
     }); 
 }
 
-async function readConfig(networkId) {
-    let data=fs.readFileSync(configPath,(err,data)=>{
-        if (err) {
+async function readConfig(networkName) {
+    let jsonData
+    try {
+        jsonData = fs.readFileSync(configPath)
+    } catch(err) {
+        if (err.code == 'ENOENT') {
+            createEmptyConfig()
+            return
+        }else{
             console.error(err);
             process.exit(1);
-        }else{
-          previous=data.toString();
-        }  
-    });
-    var json=JSON.parse(data.toString())
+        }
+    }
+    if (jsonData === undefined) {
+        return
+    }
+    var json=JSON.parse(jsonData.toString())
+    if (json.Networks === undefined) {
+        return
+    }
     for (let i=0; i<json.Networks.length; i++) {
-        if (json.Networks[i].NetworkId == networkId) {
+        if (json.Networks[i].Name == networkName) {
             return json.Networks[i]
         }
     }
-    console.error("network do not exisit in config".red);
-    process.exit(1);
+    // console.error("network do not exisit in config".red);
+    // process.exit(1);
 }
 
 async function writeConfig(networkConfig) {
-    if (networkConfig.NetworkId === undefined) {
+    if (networkConfig.Name === undefined) {
         console.error("invalid network config".red);
         process.exit(1);
     }
@@ -119,10 +129,10 @@ async function writeConfig(networkConfig) {
           previous=data.toString();
         }  
     });
-    var json = JSON.parse(data.toString())
-    var writeIndex = json.Networks.length + 1
+    var json = JSON.parse(data.toString())  
+    var writeIndex = json.Networks.length 
     for (let i=0; i<json.Networks.length; i++) {
-        if (json.Networks[i].NetworkId == networkConfig.NetworkId) {
+        if (json.Networks[i].Name == networkConfig.Name) {
             writeIndex = i
             break
         }

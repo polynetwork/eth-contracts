@@ -132,7 +132,7 @@ contract EthCrossChainManagerImplementation is Const {
         // verify proof
         bytes memory storageIndex = ECCUtils.getCrossTxStorageSlot(crossTx);
         bytes memory storageValue = ECCUtils.verifyAccountProof(accountProof, header.root, ZionCrossChainManagerAddress, storageProof, storageIndex);
-        require(ECCUtils.checkCacheDBStorage(ECCUtils.bytesToBytes32(storageValue), keccak256(rawCrossTx)), "Verify proof failed");
+        require(ECCUtils.bytesToBytes32(storageValue) == keccak256(rawCrossTx), "Verify proof failed");
         
         // check & put tx exection information
         require(!eccd.checkIfFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.txHash)), "the transaction has been executed!");
