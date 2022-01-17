@@ -1,0 +1,56 @@
+{
+	"Networks": [
+		{
+			"Name": "bsc_testnet",
+			"PolyChainID": 79,
+			"Provider": "https://data-seed-prebsc-1-s1.binance.org:8545",
+			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
+			"LockProxy": "0xf422f2E201114F10f413d6848555f7A887eC8866",
+			"EthCrossChainData": "0x8A19b36252139327508e3C394437760124a85247",
+			"CallerFactory": "0x7BA2dbd475F15ED63029c5CFE8456C2D0C5e6b5C",
+			"EthCrossChainManagerImplementation": "0xC3c6874A47b219869f46b8FA0Ff6a3E4CfAb9022",
+			"EthCrossChainManager": "0xA5a21704C1e66a0583F7C40ad7D68B0C43B43CcC",
+			"WrapperV1": "0xdEc4ed7939AC57b05c0b10685791491148E210c0",
+			"WrapperV2": "0x7D86e3cB8f8cb9dA8cF80DE37671BC637bb2E79e",
+			"Wrapper": "0x7D86e3cB8f8cb9dA8cF80DE37671BC637bb2E79e"
+		},
+		{
+			"Name": "heco_testnet",
+			"PolyChainID": 7,
+			"Provider": "https://http-testnet.hecochain.com",
+			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
+			"LockProxy": "0x79382ceB68c38c58D2d8Cbf21486c26A942DA516",
+			"EthCrossChainData": "0x0914CEe414cEA9435Ec94a9713690D324FD10393",
+			"CallerFactory": "0xE4a3e7857431bD394FBF40E2979b371226e0958E",
+			"EthCrossChainManagerImplementation": "0x2a904aB47B813AC2DF2383f9e734b2bd0c55f476",
+			"EthCrossChainManager": "0x61fe143DaB6D597711e7aef6F57B2b0158c75Ed4",
+			"WrapperV1": "0x842bF0CB3242E9f28552aaa7854Bcc8348c20C44",
+			"WrapperV2": "0x398745B0140F312Fb3a3B1bCe28Eb4757cd2ED6d",
+			"Wrapper": "0x398745B0140F312Fb3a3B1bCe28Eb4757cd2ED6d"
+		},
+		{
+			"Name": "ropsten",
+			"PolyChainID": 2,
+			"Provider": "https://ropsten.infura.io/v3/9bca539684b6408d9dbcbb179e593eab",
+			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
+			"LockProxy": "0x32a76C671334F0a9a05C07Ce82223A882b2603Ac",
+			"EthCrossChainData": "0x61BB5E606d8723a021EF17D5929EE8cca20A5beE",
+			"CallerFactory": "0xA7E69152dBA4EA63d4786068d26DF0100d580A15",
+			"EthCrossChainManagerImplementation": "0x51056dd04f3Ad664912534d26f026B46A9817f1C",
+			"EthCrossChainManager": "0x00f0Ea33a087c76cd86EA1e70481d0B25CA4f407",
+			"WrapperV1": "0x5cb4005d7c40763b635D8f0231a05667B47B5b07",
+			"WrapperV2": "0x04781017E67907f4d634fBe755E3CFA4ef4625f8",
+			"Wrapper": "0x04781017E67907f4d634fBe755E3CFA4ef4625f8"
+		},
+		{
+			"Name": "plt_testnet",
+			"PolyChainID": 107,
+			"Provider": "http://106.75.246.130:22000",
+			"LockProxy": "0x0000000000000000000000000000000000000103",
+			"EthCrossChainData": "0xB477A4fD3abf037BbEC19cCb919Ebd3274A93232",
+			"CallerFactory": "0xA2EA2F3B7585Fa2f9e2a01F89a9B704566285fF0",
+			"EthCrossChainManagerImplementation": "0x6FCAfc5569f7682141D16Dab49e1BA431863DB1A",
+			"EthCrossChainManager": "0x929b4516aA219Ee84C23F6022EEF7216b80b1761"
+		}
+	]
+}

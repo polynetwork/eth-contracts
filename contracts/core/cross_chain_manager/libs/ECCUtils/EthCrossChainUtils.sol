@@ -307,12 +307,6 @@ library ECCUtils {
             res := shr(mul(pad,8), shl(mul(pad,8), mload(add(raw,sub(offset,pad)))))
         }
     } 
-
-    function checkCacheDBStorage(bytes32 storageValue, bytes32 expectHash) internal pure returns (bool isEqual){
-        assembly {
-            isEqual := eq(storageValue, add(0x0100000000000000000000000000000000000000000000000000000000000000, shr(8, expectHash)))
-        }
-    }
     
     /*
     Account Proof
