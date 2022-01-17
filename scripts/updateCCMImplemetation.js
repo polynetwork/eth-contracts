@@ -4,13 +4,21 @@ const fs = require("fs");
 hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
+<<<<<<< HEAD
 var configPath = './devConfig.json'
+=======
+var configPath = './zionDevConfig.json'
+>>>>>>> poly/2.0
 
 async function main() {
     [admin] = await hre.ethers.getSigners();
     const netwrokId = await hre.web3.eth.getChainId();
     var config
+<<<<<<< HEAD
     await readConfig(hre.network.name).then((netConfig) => {
+=======
+    await readConfig(netwrokId).then((netConfig) => {
+>>>>>>> poly/2.0
         config = netConfig
     }).catch((err) => {
         console.error(err);
@@ -87,6 +95,7 @@ async function updateConst(polyChainId, eccd, callerFactory) {
     }); 
 }
 
+<<<<<<< HEAD
 async function readConfig(networkName) {
     let jsonData
     try {
@@ -118,6 +127,29 @@ async function readConfig(networkName) {
 
 async function writeConfig(networkConfig) {
     if (networkConfig.Name === undefined) {
+=======
+async function readConfig(networkId) {
+    let data=fs.readFileSync(configPath,(err,data)=>{
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }else{
+          previous=data.toString();
+        }  
+    });
+    var json=JSON.parse(data.toString())
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkId) {
+            return json.Networks[i]
+        }
+    }
+    console.error("network do not exisit in config".red);
+    process.exit(1);
+}
+
+async function writeConfig(networkConfig) {
+    if (networkConfig.NetworkId === undefined) {
+>>>>>>> poly/2.0
         console.error("invalid network config".red);
         process.exit(1);
     }
@@ -129,10 +161,17 @@ async function writeConfig(networkConfig) {
           previous=data.toString();
         }  
     });
+<<<<<<< HEAD
     var json = JSON.parse(data.toString())  
     var writeIndex = json.Networks.length 
     for (let i=0; i<json.Networks.length; i++) {
         if (json.Networks[i].Name == networkConfig.Name) {
+=======
+    var json = JSON.parse(data.toString())
+    var writeIndex = json.Networks.length + 1
+    for (let i=0; i<json.Networks.length; i++) {
+        if (json.Networks[i].NetworkId == networkConfig.NetworkId) {
+>>>>>>> poly/2.0
             writeIndex = i
             break
         }
