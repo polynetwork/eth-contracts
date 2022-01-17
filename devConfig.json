@@ -47,10 +47,10 @@
 			"PolyChainID": 107,
 			"Provider": "http://106.75.246.130:22000",
 			"LockProxy": "0x0000000000000000000000000000000000000103",
-			"EthCrossChainData": "0x307E808a65876178aCb919a6e7A1f5a33369BbDf",
-			"CallerFactory": "0x7f09148147E03C24Ad0C1df59d73F50CBaeA517e",
-			"EthCrossChainManagerImplementation": "0xcd55262E7E5f021c6Ea66B5896BF442Ebd37d905",
-			"EthCrossChainManager": "0x00966EF3844C6B73e3f70fB44644b0a55624DcE7"
+			"EthCrossChainData": "0xB477A4fD3abf037BbEC19cCb919Ebd3274A93232",
+			"CallerFactory": "0xA2EA2F3B7585Fa2f9e2a01F89a9B704566285fF0",
+			"EthCrossChainManagerImplementation": "0x6FCAfc5569f7682141D16Dab49e1BA431863DB1A",
+			"EthCrossChainManager": "0x929b4516aA219Ee84C23F6022EEF7216b80b1761"
 		}
 	]
 }
