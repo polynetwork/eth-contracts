@@ -29,6 +29,7 @@ async function main() {
     }
     if (config.Provider === undefined) {
         config.Provider = hre.config.networks[hre.network.name].url
+        writeConfig(config)
     }
     if (config.Deployer === undefined) {
         config.Deployer = admin.address
@@ -38,7 +39,7 @@ async function main() {
     const Empty = await ethers.getContractFactory("empty");
     const LockProxy = await ethers.getContractFactory("LockProxy");
     const EthCrossChainData = await hre.ethers.getContractFactory("EthCrossChainData");
-    const CallerFactory = await hre.ethers.getContractFactory("CallerFactory");
+    const CallerFactory = await hre.ethers.getContractFactory("CallerFactoryWithAdmin");
     let EthCrossChainManagerImplementation = await hre.ethers.getContractFactory("EthCrossChainManagerImplementation");
     const EthCrossChainManager = await hre.ethers.getContractFactory("EthCrossChainManager");
     const WrapperV1 = await hre.ethers.getContractFactory("PolyWrapperV1");
@@ -62,6 +63,7 @@ async function main() {
         await empty.deployed();
         console.log("Empty deployed to:".green, empty.address.blue);
         config.Empty = empty.address
+        writeConfig(config)
     } else {
         console.log("\nEmpty already deployed at".green, config.Empty.blue)
         empty = await Empty.attach(config.Empty) 
@@ -74,6 +76,7 @@ async function main() {
         await ccm.deployed();
         console.log("EthCrossChainManager deployed to:".green, ccm.address.blue);
         config.EthCrossChainManager = ccm.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainManager already deployed at".green, config.EthCrossChainManager.blue)
         ccm = await EthCrossChainManager.attach(config.EthCrossChainManager) 
@@ -86,6 +89,7 @@ async function main() {
         await lockProxy.deployed();
         console.log("LockProxy deployed to:".green, lockProxy.address.blue);
         config.LockProxy = lockProxy.address
+        writeConfig(config)
     } else {
         console.log("\nLockProxy already deployed at".green, config.LockProxy.blue)
         lockProxy = await LockProxy.attach(config.LockProxy) 
@@ -98,6 +102,7 @@ async function main() {
         await eccd.deployed();
         console.log("EthCrossChainData deployed to:".green, eccd.address.blue);
         config.EthCrossChainData = eccd.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainData already deployed at".green, config.EthCrossChainData.blue)
         eccd = await EthCrossChainData.attach(config.EthCrossChainData) 
@@ -110,6 +115,7 @@ async function main() {
         await cf.deployed();
         console.log("CallerFactory deployed to:".green, cf.address.blue);
         config.CallerFactory = cf.address
+        writeConfig(config)
     } else {
         console.log("\nCallerFactory already deployed at".green, config.CallerFactory.blue)
         cf = await CallerFactory.attach(config.CallerFactory) 
@@ -129,6 +135,7 @@ async function main() {
         await ccmi.deployed();
         console.log("EthCrossChainManagerImplementation deployed to:".green, ccmi.address.blue);
         config.EthCrossChainManagerImplementation = ccmi.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainManagerImplementation already deployed at".green, config.EthCrossChainManagerImplementation.blue)
         ccmi = await EthCrossChainManagerImplementation.attach(config.EthCrossChainManagerImplementation) 
@@ -174,6 +181,7 @@ async function main() {
         await wrapper1.deployed();
         console.log("WrapperV1 deployed to:".green, wrapper1.address.blue);
         config.WrapperV1 = wrapper1.address
+        writeConfig(config)
     } else {
         console.log("\nWrapperV1 already deployed at".green, config.WrapperV1.blue)
         wrapper1 = await WrapperV1.attach(config.WrapperV1) 
@@ -209,6 +217,7 @@ async function main() {
         console.log("WrapperV2 deployed to:".green, wrapper2.address.blue);
         config.WrapperV2 = wrapper2.address
         config.Wrapper = wrapper2.address
+        writeConfig(config)
     } else {
         console.log("\nWrapperV2 already deployed at".green, config.WrapperV2.blue)
         wrapper2 = await WrapperV2.attach(config.WrapperV2) 
