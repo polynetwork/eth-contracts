@@ -29,6 +29,7 @@ async function main() {
     }
     if (config.Provider === undefined) {
         config.Provider = hre.config.networks[hre.network.name].url
+        writeConfig(config)
     }
     if (config.Deployer === undefined) {
         config.Deployer = deployer.address
@@ -51,6 +52,7 @@ async function main() {
         await eccd.deployed();
         console.log("EthCrossChainData deployed to:".green, eccd.address.blue);
         config.EthCrossChainData = eccd.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainData already deployed at".green, config.EthCrossChainData.blue)
         eccd = await ECCD.attach(config.EthCrossChainData) 
@@ -63,6 +65,7 @@ async function main() {
         await ccm.deployed();
         console.log("EthCrossChainManager deployed to:".green, ccm.address.blue);
         config.EthCrossChainManager = ccm.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainManager already deployed at".green, config.EthCrossChainManager.blue)
         ccm = await CCM.attach(config.EthCrossChainManager) 
@@ -75,6 +78,7 @@ async function main() {
         await ccmp.deployed();
         console.log("EthCrossChainManagerProxy deployed to:".green, ccmp.address.blue);
         config.EthCrossChainManagerProxy = ccmp.address
+        writeConfig(config)
     } else {
         console.log("\nEthCrossChainManagerProxy already deployed at".green, config.EthCrossChainManagerProxy.blue)
         ccmp = await CCMP.attach(config.EthCrossChainManagerProxy) 

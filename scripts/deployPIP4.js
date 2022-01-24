@@ -38,6 +38,7 @@ async function main() {
         await lockproxy.deployed();
         console.log("LockProxyWithLP deployed to:".green, lockproxy.address.blue);
         config.LockProxyPip4 = lockproxy.address
+        writeConfig(config)
     } else {
         console.log("\nLockProxyPIP4 already deployed at".green, config.LockProxyPip4.blue)
         lockproxy = await LockProxyWithLP.attach(config.LockProxyPip4) 
