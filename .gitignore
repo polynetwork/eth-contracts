@@ -31,4 +31,8 @@ node_modules
 
 artifacts/
 hardhat.config.js
+truffle-config.js
+migrations/
+document/
+go_abi/
 cache/

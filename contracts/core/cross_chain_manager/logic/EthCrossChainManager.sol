@@ -9,9 +9,11 @@ import "./../upgrade/UpgradableECCM.sol";
 import "./../libs/EthCrossChainUtils.sol";
 import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
+import "./../interface/IEventWitness.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
     
+    address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08;
     address public whiteLister;
     mapping(address => bool) public whiteListFromContract;
     mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
@@ -177,6 +179,10 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         
         // Fire the cross chain event denoting there is a cross chain request from Ethereum network to other public chains through Poly chain network
         emit CrossChainEvent(tx.origin, paramTxHash, msg.sender, toChainId, toContract, rawParam);
+
+        // call EventWitness for ont-evm
+        IEventWitness(EVENT_WITNESS).witness(rawParam);
+
         return true;
     }
     /* @notice              Verify Poly chain header and proof, execute the cross chain tx from Poly chain to Ethereum

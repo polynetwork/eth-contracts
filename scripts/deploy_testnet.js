@@ -137,7 +137,9 @@ async function getPolyChainId() {
     case 43113: // avax-test
         return 209;
     case 666: // pixie-test
-        return 320;
+        return 316;
+    case 5851: // ont-test
+        return 5555;
 
     // hardhat devnet
     case 31337:
