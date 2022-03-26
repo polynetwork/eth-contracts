@@ -51,6 +51,16 @@
 			"CallerFactory": "0xA2EA2F3B7585Fa2f9e2a01F89a9B704566285fF0",
 			"EthCrossChainManagerImplementation": "0x6FCAfc5569f7682141D16Dab49e1BA431863DB1A",
 			"EthCrossChainManager": "0x929b4516aA219Ee84C23F6022EEF7216b80b1761"
+		},
+		{
+			"Name": "polygon_testnet",
+			"PolyChainID": 202,
+			"Provider": "https://rpc-mumbai.maticvigil.com",
+			"Deployer": "0x7FB1484882e4A3A7a4e31f0eb33bf3dD3d95f797",
+			"EthCrossChainData": "0x7A38a1ecdCB0E86e48d53C187B8eeeE5AD582cd6",
+			"CallerFactory": "0xFBEFA74337C3Ff0C50A5D4c588aaa20B5a22BC86",
+			"EthCrossChainManagerImplementation": "0x82305e96081404b8Bf920279fF2A9b449219aCCE",
+			"EthCrossChainManager": "0x7688F6EA8D8E95bfFCa899422973EAD26b805Ef2"
 		}
 	]
 }
