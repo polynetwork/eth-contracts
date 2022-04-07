@@ -1,5 +1,4 @@
-pragma solidity ^0.5.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.5.16;
 
 import "./../../../libs/math/SafeMath.sol";
 import "./../../../libs/common/ZeroCopySource.sol";
@@ -10,75 +9,18 @@ import "./../libs/EthCrossChainUtils.sol";
 import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
 import "./../interface/IEventWitness.sol";
-contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
+contract EthCrossChainManagerForTest is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
-    
-    address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08;
-    address public whiteLister;
-    mapping(address => bool) public whiteListFromContract;
-    mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
 
+    address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08;
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
     constructor(
         address _eccd, 
-        uint64 _chainId, 
-        address[] memory fromContractWhiteList, 
-        bytes[] memory contractMethodWhiteList
-    ) UpgradableECCM(_eccd,_chainId) public {
-        whiteLister = msg.sender;
-        for (uint i=0;i<fromContractWhiteList.length;i++) {
-            whiteListFromContract[fromContractWhiteList[i]] = true;
-        }
-        for (uint i=0;i<contractMethodWhiteList.length;i++) {
-            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
-            for (uint j=0;j<methods.length;j++) {
-                whiteListContractMethodMap[toContract][methods[j]] = true;
-            }
-        }
-    }
-    
-    modifier onlyWhiteLister() {
-        require(msg.sender == whiteLister, "Not whiteLister");
-        _;
-    }
-
-    function setWhiteLister(address newWL) public onlyWhiteLister {
-        require(newWL!=address(0), "Can not transfer to address(0)");
-        whiteLister = newWL;
-    }
-    
-    function setFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
-        for (uint i=0;i<fromContractWhiteList.length;i++) {
-            whiteListFromContract[fromContractWhiteList[i]] = true;
-        }
-    }
-    
-    function removeFromContractWhiteList(address[] memory fromContractWhiteList) public onlyWhiteLister {
-        for (uint i=0;i<fromContractWhiteList.length;i++) {
-            whiteListFromContract[fromContractWhiteList[i]] = false;
-        }
-    }
-    
-    function setContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
-        for (uint i=0;i<contractMethodWhiteList.length;i++) {
-            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
-            for (uint j=0;j<methods.length;j++) {
-                whiteListContractMethodMap[toContract][methods[j]] = true;
-            }
-        }
-    }
-    
-    function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
-        for (uint i=0;i<contractMethodWhiteList.length;i++) {
-            (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
-            for (uint j=0;j<methods.length;j++) {
-                whiteListContractMethodMap[toContract][methods[j]] = false;
-            }
-        }
-    }
+        uint64 _chainId
+    ) UpgradableECCM(_eccd,_chainId) public {}
 
     /* @notice              sync Poly chain genesis block header to smart contrat
     *  @dev                 this function can only be called once, nextbookkeeper of rawHeader can't be empty
@@ -152,8 +94,6 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return              true or false
     */
     function crossChain(uint64 toChainId, bytes calldata toContract, bytes calldata method, bytes calldata txData) whenNotPaused external returns (bool) {
-        // Only allow whitelist contract to call
-        require(whiteListFromContract[msg.sender],"Invalid from contract");
         
         // Load Ethereum cross chain data contract
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
@@ -231,9 +171,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
         
         // Obtain the targeting contract, so that Ethereum cross chain manager contract can trigger the executation of cross chain tx on Ethereum side
         address toContract = Utils.bytesToAddress(toMerkleValue.makeTxParam.toContract);
-        
-        // only invoke PreWhiteListed Contract and method For Now
-        require(whiteListContractMethodMap[toContract][toMerkleValue.makeTxParam.method],"Invalid to contract or method");
+        require(toContract != EthCrossChainDataAddress, "No eccd here!");
 
         //TODO: check this part to make sure we commit the next line when doing local net UT test
         require(_executeCrossChainTx(toContract, toMerkleValue.makeTxParam.method, toMerkleValue.makeTxParam.args, toMerkleValue.makeTxParam.fromContract, toMerkleValue.fromChainID), "Execute CrossChain Tx failed!");
@@ -254,21 +192,21 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     *  @return                  true or false
     */
     function _executeCrossChainTx(address _toContract, bytes memory _method, bytes memory _args, bytes memory _fromContractAddr, uint64 _fromChainId) internal returns (bool){
-        // Ensure the targeting contract gonna be invoked is indeed a contract rather than a normal account address
-        require(Utils.isContract(_toContract), "The passed in address is not a contract!");
-        bytes memory returnData;
-        bool success;
+        // // Ensure the targeting contract gonna be invoked is indeed a contract rather than a normal account address
+        // require(Utils.isContract(_toContract), "The passed in address is not a contract!");
+        // bytes memory returnData;
+        // bool success;
         
-        // The returnData will be bytes32, the last byte must be 01;
-        (success, returnData) = _toContract.call(abi.encodePacked(bytes4(keccak256(abi.encodePacked(_method, "(bytes,bytes,uint64)"))), abi.encode(_args, _fromContractAddr, _fromChainId)));
+        // // The returnData will be bytes32, the last byte must be 01;
+        // (success, returnData) = _toContract.call(abi.encodePacked(bytes4(keccak256(abi.encodePacked(_method, "(bytes,bytes,uint64)"))), abi.encode(_args, _fromContractAddr, _fromChainId)));
         
-        // Ensure the executation is successful
-        require(success == true, "EthCrossChain call business contract failed");
+        // // Ensure the executation is successful
+        // require(success == true, "EthCrossChain call business contract failed");
         
-        // Ensure the returned value is true
-        require(returnData.length != 0, "No return value from business contract!");
-        (bool res,) = ZeroCopySource.NextBool(returnData, 31);
-        require(res == true, "EthCrossChain call business contract return is not true");
+        // // Ensure the returned value is true
+        // require(returnData.length != 0, "No return value from business contract!");
+        // (bool res,) = ZeroCopySource.NextBool(returnData, 31);
+        // require(res == true, "EthCrossChain call business contract return is not true");
         
         return true;
     }
