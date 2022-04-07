@@ -10,7 +10,7 @@ import "../../libs/lifecycle/Pausable.sol";
 
 import "./interfaces/ILockProxy.sol";
 
-contract PolyWrapperV2 is Ownable, Pausable, ReentrancyGuard {
+contract PolyWrapperV1 is Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
@@ -58,6 +58,7 @@ contract PolyWrapperV2 is Ownable, Pausable, ReentrancyGuard {
     function lock(address fromAsset, uint64 toChainId, bytes memory toAddress, uint amount, uint fee, uint id) public payable nonReentrant whenNotPaused {
         
         require(toChainId != chainId && toChainId != 0, "!toChainId");
+        require(amount > fee, "amount less than fee");
         require(toAddress.length !=0, "empty toAddress");
         address addr;
         assembly { addr := mload(add(toAddress,0x14)) }
@@ -65,11 +66,9 @@ contract PolyWrapperV2 is Ownable, Pausable, ReentrancyGuard {
         
         _pull(fromAsset, amount);
 
-        amount = _checkoutFee(fromAsset, amount, fee);
+        _push(fromAsset, toChainId, toAddress, amount.sub(fee));
 
-        _push(fromAsset, toChainId, toAddress, amount);
-
-        emit PolyWrapperLock(fromAsset, msg.sender, toChainId, toAddress, amount, fee, id);
+        emit PolyWrapperLock(fromAsset, msg.sender, toChainId, toAddress, amount.sub(fee), fee, id);
     }
 
     function speedUp(address fromAsset, bytes memory txHash, uint fee) public payable nonReentrant whenNotPaused {
@@ -82,18 +81,6 @@ contract PolyWrapperV2 is Ownable, Pausable, ReentrancyGuard {
             require(msg.value == amount, "insufficient ether");
         } else {
             IERC20(fromAsset).safeTransferFrom(msg.sender, address(this), amount);
-        }
-    }
-
-    // take fee in the form of ether
-    function _checkoutFee(address fromAsset, uint amount, uint fee) internal view returns (uint) {
-        if (fromAsset == address(0)) {
-            require(msg.value >= amount, "insufficient ether");
-            require(amount > fee, "amount less than fee");
-            return amount.sub(fee);
-        } else {
-            require(msg.value >= fee, "insufficient ether");
-            return amount;
         }
     }
 
