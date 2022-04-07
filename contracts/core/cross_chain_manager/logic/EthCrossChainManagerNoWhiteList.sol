@@ -12,7 +12,7 @@ import "./../interface/IEventWitness.sol";
 contract EthCrossChainManagerNoWhiteList is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
 
-    address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08;
+    address constant EVENT_WITNESS = 0xA8a1c2E2739725a14072B0bB1C6FAb0B36C15952; // testnet
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);

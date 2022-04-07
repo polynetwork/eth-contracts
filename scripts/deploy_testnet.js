@@ -92,53 +92,11 @@ async function getPolyChainId() {
   switch (chainId) {
     
     // mainnet
-    case 1: // eth-main
-      return 2;
-    case 56: // bsc-main
-      return 6;
-    case 128: // heco-main
-      return 7;
-    case 137: // polygon-main
-      return 17;
-    case 66: // ok-main
-      return 12;
-    case 1718: // plt-main
-      return 8;
-    case 42161: // arbitrum-main
-      return 19;
-    // case 10: // optimistic-main
-    //   return ;
 
     // testnet
-    case 3: // ropsten-test
-      return 2;
-    case 4: // rinkeby
-      return 402;
-    case 5: // goerli
-      return 502;
-    case 42: // kovan
-      return 302;
-    case 97: // bsc-test
-      return 79;
-    case 256: // heco-test
-      return 7;
-    case 80001: // polygon-test
-      return 202;
-    case 65: // ok-test
-      return 200;
-    case 101: // plt-test
-      return 107;
-    case 421611: // arbitrum-test
-      return 205;
-    case 69: // optimistic-test
-      return 210;
-    case 4002: // ftm-test
-        return 208;
-    case 43113: // avax-test
-        return 209;
-    case 666: // pixie-test
-        return 316;
-    case 5851: // ont-test
+    case 5851:  // ont_testnet
+        return 333;
+    case 12345: // ont-private
         return 5555;
 
     // hardhat devnet
