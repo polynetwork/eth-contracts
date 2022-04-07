@@ -9,7 +9,7 @@ contract CallerFactoryWithAdmin is ProxyFactory{
     address public admin;
 
     constructor(address[] memory initChildren) public ProxyFactory() {
-        for (uint i=0;i<initChildren.length;i++) {
+        for (uint i=0; i<initChildren.length; i++) {
             children[initChildren[i]] = true;
         }
         admin = msg.sender;
@@ -24,8 +24,10 @@ contract CallerFactoryWithAdmin is ProxyFactory{
         admin = newAdmin;
     }
 
-    function setChild(address _addr, bool flag) public {
-        children[_addr] = flag;
+    function setChildren(address[] memory _addrs, bool flag) public {
+        for (uint i=0; i<_addrs.length; i++) {
+            children[_addrs[i]] = flag;
+        }
     }
     
     function isChild(address _addr) public view returns(bool) {
