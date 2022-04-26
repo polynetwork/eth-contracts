@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 contract Const {
     bytes constant ZionCrossChainManagerAddress = hex"5747C05FF236F8d18BB21Bc02ecc389deF853cae"; 
     
-    address constant EthCrossChainDataAddress = 0x7A38a1ecdCB0E86e48d53C187B8eeeE5AD582cd6; 
-    address constant EthCrossChainCallerFactoryAddress = 0xFBEFA74337C3Ff0C50A5D4c588aaa20B5a22BC86; 
-    uint constant chainId = 202; 
+    address constant EthCrossChainDataAddress = 0x14eF469df57090d343dB9C90096aAAb435855175; 
+    address constant EthCrossChainCallerFactoryAddress = 0x1cC373c88969371C74B1F9D236e68B6906b5Da61; 
+    uint constant chainId = 7; 
 }

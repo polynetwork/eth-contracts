@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 import "./Const.sol";
 import "../interface/IEthCrossChainData.sol";
+import "../interface/IEventWitness.sol";
 import "../data/EthCrossChainData.sol";
 import "../caller/CallerFactory.sol";
 import "../caller/EthCrossChainCaller.sol"; 
@@ -9,7 +10,7 @@ import "../caller/EthCrossChainCaller.sol";
 import "../libs/ECCUtils/EthCrossChainUtils.sol";
 import "./../../../libs/math/SafeMath.sol";
 
-contract EthCrossChainManagerImplementation is Const {
+contract OntEvmCrossChainManagerImplementation is Const {
     using SafeMath for uint256;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
@@ -22,6 +23,8 @@ contract EthCrossChainManagerImplementation is Const {
     // address constant EthCrossChainCallerFactoryAddress = 0x0000000000000000000000000000000000000000; 
     // bytes constant ZionCrossChainManagerAddress = "0x000000000000000000000000000000000000000000";
     // uint constant chainId = 0;
+    // address constant EVENT_WITNESS = 0xA8a1c2E2739725a14072B0bB1C6FAb0B36C15952; // testnet
+    // address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08; // mainnet
     
     function getZionChainId() public pure returns(uint) {
         return chainId;
@@ -106,6 +109,10 @@ contract EthCrossChainManagerImplementation is Const {
         require(IEthCrossChainData(EthCrossChainDataAddress).putEthTxHash(keccak256(rawParam)), "Save ethTxHash by index to Data contract failed!");
         
         emit CrossChainEvent(tx.origin, paramTxHash, msg.sender, toChainId, toContract, rawParam);
+
+        // call EventWitness for ont-evm
+        IEventWitness(EVENT_WITNESS).witness(rawParam);
+
         return true;
     }
 
