@@ -38,7 +38,6 @@ async function main() {
 
     const EthCrossChainData = await hre.ethers.getContractFactory("EthCrossChainData");
     const CallerFactory = await hre.ethers.getContractFactory("CallerFactoryWithAdmin");
-    let EthCrossChainManagerImplementation = await hre.ethers.getContractFactory("OntEvmCrossChainManagerImplementation");
     const EthCrossChainManager = await hre.ethers.getContractFactory("EthCrossChainManager");
     let polyId = config.PolyChainID
     let eccd
@@ -89,7 +88,7 @@ async function main() {
 
         // deploy EthCrossChainManagerImplementation
         console.log("\ndeploy EthCrossChainManagerImplementation ......".cyan);
-        EthCrossChainManagerImplementation = await hre.ethers.getContractFactory("EthCrossChainManagerImplementation");
+        EthCrossChainManagerImplementation = await hre.ethers.getContractFactory("OntEvmCrossChainManagerImplementation");
         ccmi = await EthCrossChainManagerImplementation.deploy();
         await ccmi.deployed();
         console.log("EthCrossChainManagerImplementation deployed to:".green, ccmi.address.blue);
@@ -97,6 +96,7 @@ async function main() {
         writeConfig(config)
     } else {
         console.log("\nEthCrossChainManagerImplementation already deployed at".green, config.EthCrossChainManagerImplementation.blue)
+        EthCrossChainManagerImplementation = await hre.ethers.getContractFactory("OntEvmCrossChainManagerImplementation");
         ccmi = await EthCrossChainManagerImplementation.attach(config.EthCrossChainManagerImplementation) 
     }
     
