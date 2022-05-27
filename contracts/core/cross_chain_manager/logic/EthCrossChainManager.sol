@@ -13,7 +13,7 @@ import "./../interface/IEventWitness.sol";
 contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
     using SafeMath for uint256;
     
-    address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08;
+    address constant EVENT_WITNESS = ; // add mainnet witness address here 
     address public whiteLister;
     mapping(address => bool) public whiteListFromContract;
     mapping(address => mapping(bytes => bool)) public whiteListContractMethodMap;
