@@ -172,7 +172,8 @@ library ECCUtils {
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of GasUsed
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of Time
         (bytes memory extra,) = rlpGetNextBytes(rawHeader, offset + size);
-        (bytes memory validatorsBytes,) = rlpGetNextBytes(extra, 0x40);
+        (,offset) = rlpGetNextUint64(extra, 0x40);     // position of EpochStartHeight (a bytes32 digest is appended before extra)
+        (bytes memory validatorsBytes,) = rlpGetNextBytes(extra, offset);
         (size, offset) = rlpReadKind(validatorsBytes, 0x20);
         require(size%ZION_ADDRESS_LEN==0,"invalid header extra validatorSet");
         validators = new address[](size/ZION_ADDRESS_LEN);

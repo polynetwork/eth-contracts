@@ -137,7 +137,8 @@ async function updateConst(polyChainId, eccd, callerFactory) {
     fs.writeFileSync('./contracts/core/cross_chain_manager/logic/Const.sol', 
     'pragma solidity ^0.5.0;\n'+
     'contract Const {\n'+
-    '    bytes constant ZionCrossChainManagerAddress = hex"5747C05FF236F8d18BB21Bc02ecc389deF853cae"; \n'+
+    '    bytes constant ZionCrossChainManagerAddress = hex"0000000000000000000000000000000000001003"; \n'+
+    // '    bytes constant ZionCrossChainManagerAddress = hex"5747C05FF236F8d18BB21Bc02ecc389deF853cae"; \n'+
     '    \n'+
     '    address constant EthCrossChainDataAddress = '+eccd+'; \n'+
     '    address constant EthCrossChainCallerFactoryAddress = '+callerFactory+'; \n'+
