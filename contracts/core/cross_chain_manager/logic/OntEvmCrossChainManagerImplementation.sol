@@ -1,6 +1,7 @@
 pragma solidity ^0.5.0;
 
 import "./Const.sol";
+import "./OntConst.sol";
 import "../interface/IEthCrossChainData.sol";
 import "../interface/IEventWitness.sol";
 import "../data/EthCrossChainData.sol";
