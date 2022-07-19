@@ -10,7 +10,7 @@ import "../caller/EthCrossChainCaller.sol";
 import "../libs/ECCUtils/EthCrossChainUtils.sol";
 import "./../../../libs/math/SafeMath.sol";
 
-contract OntEvmCrossChainManagerImplementation is Const {
+contract OntEvmCrossChainManagerImplementation is Const, OntConst {
     using SafeMath for uint256;
 
     event InitGenesisBlockEvent(uint256 height, bytes rawHeader);
@@ -23,6 +23,8 @@ contract OntEvmCrossChainManagerImplementation is Const {
     // address constant EthCrossChainCallerFactoryAddress = 0x0000000000000000000000000000000000000000; 
     // bytes constant ZionCrossChainManagerAddress = "0x000000000000000000000000000000000000000000";
     // uint constant chainId = 0;
+
+    // see in OntConst.sol
     // address constant EVENT_WITNESS = 0xA8a1c2E2739725a14072B0bB1C6FAb0B36C15952; // testnet
     // address constant EVENT_WITNESS = 0x2b1143484bf5097A29678FD9592f75FE4639CA08; // mainnet
     

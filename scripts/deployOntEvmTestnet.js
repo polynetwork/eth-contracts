@@ -142,8 +142,7 @@ async function updateConst(polyChainId, eccd, callerFactory) {
     '    \n'+
     '    address constant EthCrossChainDataAddress = '+eccd+'; \n'+
     '    address constant EthCrossChainCallerFactoryAddress = '+callerFactory+'; \n'+
-    '    uint constant chainId = '+polyChainId+'; \n'+
-    '    address constant EVENT_WITNESS = 0xA8a1c2E2739725a14072B0bB1C6FAb0B36C15952; // testnet \n}', 
+    '    uint constant chainId = '+polyChainId+'; \n}', 
     function(err) {
         if (err) {
             console.error(err);
