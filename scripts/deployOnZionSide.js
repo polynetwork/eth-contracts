@@ -4,7 +4,7 @@ const fs = require("fs");
 hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
-var configPath = './devConfig.json'
+var configPath = './contractConfig.json'
 
 async function main() {
     [admin, creator] = await hre.ethers.getSigners();
