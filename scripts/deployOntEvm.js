@@ -83,6 +83,7 @@ async function main() {
         // update Const.sol
         console.log("\nupdate Const.sol ......".cyan);
         await updateConst(config.PolyChainID, eccd.address, cf.address);
+        await updateOntConstMainnet();
         console.log("Const.sol updated".green);
         await hre.run('compile');
 
@@ -143,6 +144,20 @@ async function updateConst(polyChainId, eccd, callerFactory) {
     '    address constant EthCrossChainDataAddress = '+eccd+'; \n'+
     '    address constant EthCrossChainCallerFactoryAddress = '+callerFactory+'; \n'+
     '    uint constant chainId = '+polyChainId+'; \n}', 
+    function(err) {
+        if (err) {
+            console.error(err);
+            process.exit(1);
+        }
+    }); 
+}
+
+async function updateOntConstMainnet() {
+
+    fs.writeFileSync('./contracts/core/cross_chain_manager/logic/OntConst.sol', 
+    'pragma solidity ^0.5.0;\n'+
+    'contract OntConst {\n'+
+    '    address constant EVENT_WITNESS = NOT_DEPLOYED_YET; // mainnet \n}', 
     function(err) {
         if (err) {
             console.error(err);
