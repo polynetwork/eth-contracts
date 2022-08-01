@@ -451,6 +451,7 @@ library ECCUtils {
     
     // won't change memory
     function hexToCompact(bytes memory keyHex) internal pure returns(bytes memory keyCompact) {
+        if (keyHex.length == 0) { return hex"0x00"; }
         uint hexLen = keyHex.length;
         uint compactLen = hexLen/2 + 1;
         uint t = 0;
