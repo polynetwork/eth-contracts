@@ -1,12 +1,12 @@
 const { ethers } = require("hardhat");
 const hre = require("hardhat");
-const fs = require("fs");
 const Web3 = require("web3");
 const { expect } = require("chai");
-const bytes = require("@ethersproject/bytes");
+const ethUtils = require("ethereumjs-util");
+const { BigNumber } = require("ethers");
 hre.web3 = new Web3(hre.network.provider);
 
-describe("ECCUtils", function () {
+describe.only("ECCUtils", function () {
 
     let empty32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
     let empty20 = '0x0000000000000000000000000000000000000000';
@@ -16,7 +16,7 @@ describe("ECCUtils", function () {
     let addr2;
     let addrs;
 
-    it("Should init", async function () {
+    beforeEach("Should init", async function () {
         ECCUtilsMock = await ethers.getContractFactory("ECCUtilsMock");
         [addr1, addr2, ...addrs] = await ethers.getSigners();
         eccu = await ECCUtilsMock.deploy();
@@ -130,6 +130,19 @@ describe("ECCUtils", function () {
             expect(await eccu.verifySeal(sigHash, empty32+empty32.slice(2)+'00')).to.equal(empty20);
         });
 
+        it("Should return signer while seal is valid", async function () {
+            const privateKey = "0x159b41b572a5d39ce6a8fc0083d5dfc0fe50b26fdbf4730106d3c7590594054f";
+            const message = "0x284f3174a4d346506d173f84686f46fb";
+
+            const privateKeyBuffer = ethUtils.toBuffer(privateKey);
+            const messageBuffer = ethUtils.toBuffer(message);
+            const messageHash = ethUtils.keccak256(messageBuffer);
+            const signature = ethUtils.ecsign(messageHash, privateKeyBuffer);
+            const flatSignature = ethUtils.toRpcSig(signature.v - 27, signature.r, signature.s);
+            const address = ethUtils.Address.fromPrivateKey(privateKeyBuffer);
+            const recoveredAddress = await eccu.verifySeal(messageHash, flatSignature);
+            expect(recoveredAddress.toLowerCase()).to.equal(address.toString());
+        });
     });
 
     describe("hasEnoughSigners", function () {
@@ -138,12 +151,13 @@ describe("ECCUtils", function () {
         let signersInvalid1 = ['0x1111111111111111111111111111111111111111','0x2222222222222222222222222222222222222222'];
         let signersInvalid2 = ['0x1111111111111111111111111111111111111111','0x2222222222222222222222222222222222222222','0x5555555555555555555555555555555555555555'];
         let signersInvalid3 = ['0x1111111111111111111111111111111111111111','0x2222222222222222222222222222222222222222','0x0000000000000000000000000000000000000000'];
+        let signersInvalid4 = ['0x1111111111111111111111111111111111111111','0x2222222222222222222222222222222222222222','0x2222222222222222222222222222222222222222'];
 
-        it("Should return true while there is enough signers", async function () {
+        it("Should return true while there are enough signers", async function () {
             expect(await eccu.hasEnoughSigners(validators,signersValid)).to.equal(true);
         });
 
-        it("Should return false while there is no enough signers", async function () {
+        it("Should return false while there are no enough signers", async function () {
             expect(await eccu.hasEnoughSigners(validators,signersInvalid1)).to.equal(false);
         });
 
@@ -155,9 +169,12 @@ describe("ECCUtils", function () {
             expect(await eccu.hasEnoughSigners(validators,signersInvalid3)).to.equal(false);
         });
 
+        it("Should return false while there are enough signers but not some are duplicate", async function () {
+            expect(await eccu.hasEnoughSigners(validators,signersInvalid4)).to.equal(false);
+        })
+
     });
 
-    // TODO: EXTRA UPDATE
     describe("decodeHeader", function () {
         let rawHeader = '0xf90271a09ba4f263f431924b824b315667fa55a934653b1bc59f2cff8a3f9eaacf45fd0ca01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794258af48e28e4a6846e931ddff8e1cdf8579821e5a0bfc1711d4a46f45c2422bc0c97c3a3e69ab5429b340f4a6f92224bfe0e1fed4da056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010d84fcc4db9f8084614bf970b87bd983010a04846765746888676f312e31362e328664617277696e000000000000f859f85494258af48e28e4a6846e931ddff8e1cdf8579821e5948c09d936a1b408d6e0afaa537ba4e06c4504a0ae94c095448424a5ecd5ca7ccdadfaad127a9d7e88ec94d47a4e56e9262543db39d9203cf1a2e53735f83480c080a063746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365880000000000000000';
         let root = '0xbfc1711d4a46f45c2422bc0c97c3a3e69ab5429b340f4a6f92224bfe0e1fed4d';
@@ -175,13 +192,14 @@ describe("ECCUtils", function () {
             expect(header.number).to.equal(number);
         });
 
-        it("Should return block.extra.validatorSet", async function () {
-            let res = await eccu.getHeaderValidators(rawHeader);
-            expect(res.length).to.equal(validators.length);
-            for (let i=0; i<res.length; i++) {
-                expect(res[i]).to.equal(validators[i]);
-            }
-        });
+        // TODO: update rawHeader
+        // it("Should return block.extra.validatorSet", async function () {
+        //     let res = await eccu.getHeaderValidators(rawHeader);
+        //     expect(res.length).to.equal(validators.length);
+        //     for (let i=0; i<res.length; i++) {
+        //         expect(res[i]).to.equal(validators[i]);
+        //     }
+        // });
 
     });
     
@@ -208,6 +226,7 @@ describe("ECCUtils", function () {
         let _address = '0xffff111122223333444455556666777788889999';
         let _bytes32 = '0xffff111122223333444455556666777788889999aaaabbbbccccddddeeeeffff';
         let _uint256 = 0x12345678;
+        let _uint256Large = BigNumber.from("2").pow("255");
         let _uint256Hex = '0x0000000000000000000000000000000000000000000000000000000012345678';
 
         it("bytes32ToBytes", async function () {
@@ -216,6 +235,7 @@ describe("ECCUtils", function () {
 
         it("uint256ToBytes", async function () {
             expect(await eccu.uint256ToBytes(_uint256)).to.equal(_uint256Hex);
+            await expect(eccu.uint256ToBytes(_uint256Large)).to.revertedWith("Value exceeds the range");
         });
 
         it("addressToBytes", async function () {
@@ -224,17 +244,17 @@ describe("ECCUtils", function () {
 
         it("bytesToBytes32", async function () {
             expect(await eccu.bytesToBytes32(_bytes32)).to.equal(_bytes32);
-            await expect(eccu.bytesToBytes32(_address)).to.be.reverted;  // invalid length
+            await expect(eccu.bytesToBytes32(_address)).to.be.revertedWith("bytes length is not 32.");  // invalid length
         });
 
         it("bytesToUint256", async function () {
             expect(await eccu.bytesToUint256(_uint256Hex)).to.equal(_uint256);
-            await expect(eccu.bytesToUint256(_address)).to.be.reverted;  // invalid length
+            await expect(eccu.bytesToUint256(_address)).to.be.revertedWith("bytes length is not 32.");  // invalid length
         });
 
         it("bytesToAddress", async function () {
             expect(await eccu.bytesToAddress(_address)).to.equal(_address);
-            await expect(eccu.bytesToAddress(_bytes32)).to.be.reverted;  // invalid length
+            await expect(eccu.bytesToAddress(_bytes32)).to.be.revertedWith("bytes length does not match address");  // invalid length
         });
 
     });
@@ -311,17 +331,22 @@ describe("ECCUtils", function () {
     
     describe("checkNodeHash", function () {
 
-        let proof = '0xb907b5f90211a07687280b5ba058a93b413af112a130a8d39637c247f8d85192a7c67c70ee3950a09cb1f22c785aa679546ca918b95aa6c5104599632ffddbc5a1d512fddd2ef71fa055c8df2b2e43e8a5eea117ab89503f37322511e79cf85b8cfce984b28b7a2aa1a08e0962297f7a46090c3b032219747225116e76d6ebc1bafef7be592de9e1bfa2a0377dd047779e0391709fb1ea4ff97a994de6e7aeba1495f233dc75c365f38216a027f4962abe05821d4fcfd5f0e904698030352123a7f712dfbc614e96661ed063a0424b3a3cf2ab62f6c30dd3c3b6ebdefb0845b2f8fb4be70616ace3d9cb161817a0d5bab3d07df6d090da36de41ab18c22c23d29b6687ff1e8f375f1993d979c93ea089f2ad61b3afb974b8b79d2d55448537b539d17224f8e1cc2ed295322aab010ca0d64da88dd795554c52ec51ae52a16ada35cae4e6b7e4668eb41d6e74cf27640fa0caeccfa6e0d12f1294d875a0f050605e313925586b2d3f2493444f0c6869d0dfa097a42c039fa8d4905ec2c04fd2e72c24266ff79b9c87b850bef961daff7a6fb3a0df45dd7904409da0b383f85db1ef4c48f3122adc9b5abf27ccb60ef289fea54da04178aa4710a49814f40094eb21ad07261080bdba8c1451a2e45b4ed1361a0c13a0620d569ac2590827749739a545f47f237e8e2680bef2374327fad845c8296c93a0e95707a43973f82676ce9b35e3b7f2fdfba4e45a0b881d83cf82f36123ca930080f90211a0b037fdbdf256ff0ecca12de327d220ff28b3f3d312cc2e8b70e34586739e5c81a0fc894be17703ca157bf8f71587b42d0edca445b0720539201e68ee082af7eb6ba05cbda5d75281c8e1077b80785fa479301fd19ddbc6294e8c9a0624ed3fb96a76a0ba46ed4b15b5a6d555af8936388de319ba0235e9133df4afe88ec352d47df36fa0ff27f15fbe221fabec8e1ee1f0d1636de5fc1e6b125e2078032fc9aabdf03c05a0530e5949f4f4c3e7d2e289033332e823bf8ff1eced5fd0d58f6a1d7472944275a0cecb7c33f85f57fef3332095ff42dcaadbeb628119489fa8208a0a8c73a32436a028278f80ac8f391556534ea318023f52e771fe2a7743a745ab1bf58573a4133da04dfa02bb84ff96b50105e701b21822a529f3dbc9f0f6fe59fe219e8520221b27a0741c90073feccaa156ba8be321eb940f04614fba23157986e2e3b426277d53a7a0fdce8171737b54cc5ed4d53d23feef560f7035ec7dc34e33428e2caefd50d82ea0e852d38aeeb1862f232352c139ad640e857e7565e7a6d667b2196074dcac7a3ea05429a515bcf40e1cbc650bfca440e1a41d5fd0b9684764028a850ed66d69b17ca03447aa76626b769e552d4a98e336a79c083015665b5af3f4b5e6314f4592aecfa0bbd0785e0b664b80a3baf8130348df9e1e18fc5dcae41a9c9888df41486a9d08a0c09fcaf04068f935ef9bcbb4819c0cdc5cfc5ea68feedd4fe6cabc9c83e7561480f90211a05149ec605b794803218602aea6a0c8c8f2f4cb67435bf252225b2126ee219d48a0b9c3d332d3ed112cfddfdcf94ec567e7d900255ea7019035de992e0a11a10047a0a0150e15e0a12f891fd0191eb1777c709c5f994d9d3cbb0fb11dba6e6b779395a0e3804dd5ea32d1d04f20713c9feae3f47ab55f37b9ae300118a194764ed34c91a0f759bc4b416e2fa1ab4985eb97add20796e1d9be8a00cee66d60a7a32eebe465a071cd26dbffe9cd773fcd505876366427c6b85f9a17ee98ecdae0a6eaa776d1d3a0828996a14daca6697b777f99d05464f1f27caffb242892acae6d4b952a96ca90a0808f3bc9523251abeab1fc1321b9248aeaa495cf14a977f1e482153b6e9bfeada045b5a0071ea3f220397cf1d3971cd29aa50fc9636613f5e69937c7b31e565414a0086202c405274eef66d29e86ee76d933c3debb4cc4e182373b6980ee2c606b4ca0777206af7ac6d1cd3ebc0d5320553c7550ddd8eb1d6b00350aa9d4753c1fb136a0f149f52d5625645ee858246d3294ca169afaa6c146313b15c1c86b2cf4bccd43a0cd6293863bde44dd4a1df7c7919538617e8f107140562087ae2885c35758702ea00d1e699c3613983556a77316d656b67831c13c5e069fb18e2e96e0ed1a80a21da0424155278afe97e32747e3c25fd3340e68e6350a9ea7a06327368064c074d6a5a0c34a527eec08998e829b2df246b503c28551b6f65ca6a0aa3b4350cb17200f8c80f90151a0744d00ff280e769c2daf908c1e8a4b5e5ea9a653295deb0d07160d83eac7435aa010ef6734ed120f8f8ee079d2bf6db2a234d731e7d08c2f31e4738abc0d8443568080a01755a82d129503f82ff0a92265bb8d056a81456a346b788522aad848a99e000580a0ea8e41e2016c801b99b2bf7333bc5f27283388df703546c69d69057b21b085a8a0b0889dcbe633df5eb88b7a612bb25bd685c5d661dbd38b6819d0c197ab30e07680a084d71f99e326177e070f1618a05fb1bb9e3257cc9ea9c2e9cdc367943f41c4dda042d09c033a316c486dd6052b725fefc6d575ecb1a92389ed51db07236cde662180a080a3d9222507178bb567c5e1041070f041661bf60179e5595b044b10cb88fb8580a0334e35ff43871b958ff4b604161c6da0288f61a12316ed4f0a377d3fc06df37aa02081102b6f79d26a1ca5984a8abd89cf434be02ca2f2c4862494dc34dde73fe880e49f2087fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace83828a1c';
-        let root = '0xda929e3057a947262f252e7e6d821d03af1652d1fcc923c7b3e8e43195ad9e72';
-        let offset = 0x23
+        let proof1 = '0xb907b5f90211a07687280b5ba058a93b413af112a130a8d39637c247f8d85192a7c67c70ee3950a09cb1f22c785aa679546ca918b95aa6c5104599632ffddbc5a1d512fddd2ef71fa055c8df2b2e43e8a5eea117ab89503f37322511e79cf85b8cfce984b28b7a2aa1a08e0962297f7a46090c3b032219747225116e76d6ebc1bafef7be592de9e1bfa2a0377dd047779e0391709fb1ea4ff97a994de6e7aeba1495f233dc75c365f38216a027f4962abe05821d4fcfd5f0e904698030352123a7f712dfbc614e96661ed063a0424b3a3cf2ab62f6c30dd3c3b6ebdefb0845b2f8fb4be70616ace3d9cb161817a0d5bab3d07df6d090da36de41ab18c22c23d29b6687ff1e8f375f1993d979c93ea089f2ad61b3afb974b8b79d2d55448537b539d17224f8e1cc2ed295322aab010ca0d64da88dd795554c52ec51ae52a16ada35cae4e6b7e4668eb41d6e74cf27640fa0caeccfa6e0d12f1294d875a0f050605e313925586b2d3f2493444f0c6869d0dfa097a42c039fa8d4905ec2c04fd2e72c24266ff79b9c87b850bef961daff7a6fb3a0df45dd7904409da0b383f85db1ef4c48f3122adc9b5abf27ccb60ef289fea54da04178aa4710a49814f40094eb21ad07261080bdba8c1451a2e45b4ed1361a0c13a0620d569ac2590827749739a545f47f237e8e2680bef2374327fad845c8296c93a0e95707a43973f82676ce9b35e3b7f2fdfba4e45a0b881d83cf82f36123ca930080f90211a0b037fdbdf256ff0ecca12de327d220ff28b3f3d312cc2e8b70e34586739e5c81a0fc894be17703ca157bf8f71587b42d0edca445b0720539201e68ee082af7eb6ba05cbda5d75281c8e1077b80785fa479301fd19ddbc6294e8c9a0624ed3fb96a76a0ba46ed4b15b5a6d555af8936388de319ba0235e9133df4afe88ec352d47df36fa0ff27f15fbe221fabec8e1ee1f0d1636de5fc1e6b125e2078032fc9aabdf03c05a0530e5949f4f4c3e7d2e289033332e823bf8ff1eced5fd0d58f6a1d7472944275a0cecb7c33f85f57fef3332095ff42dcaadbeb628119489fa8208a0a8c73a32436a028278f80ac8f391556534ea318023f52e771fe2a7743a745ab1bf58573a4133da04dfa02bb84ff96b50105e701b21822a529f3dbc9f0f6fe59fe219e8520221b27a0741c90073feccaa156ba8be321eb940f04614fba23157986e2e3b426277d53a7a0fdce8171737b54cc5ed4d53d23feef560f7035ec7dc34e33428e2caefd50d82ea0e852d38aeeb1862f232352c139ad640e857e7565e7a6d667b2196074dcac7a3ea05429a515bcf40e1cbc650bfca440e1a41d5fd0b9684764028a850ed66d69b17ca03447aa76626b769e552d4a98e336a79c083015665b5af3f4b5e6314f4592aecfa0bbd0785e0b664b80a3baf8130348df9e1e18fc5dcae41a9c9888df41486a9d08a0c09fcaf04068f935ef9bcbb4819c0cdc5cfc5ea68feedd4fe6cabc9c83e7561480f90211a05149ec605b794803218602aea6a0c8c8f2f4cb67435bf252225b2126ee219d48a0b9c3d332d3ed112cfddfdcf94ec567e7d900255ea7019035de992e0a11a10047a0a0150e15e0a12f891fd0191eb1777c709c5f994d9d3cbb0fb11dba6e6b779395a0e3804dd5ea32d1d04f20713c9feae3f47ab55f37b9ae300118a194764ed34c91a0f759bc4b416e2fa1ab4985eb97add20796e1d9be8a00cee66d60a7a32eebe465a071cd26dbffe9cd773fcd505876366427c6b85f9a17ee98ecdae0a6eaa776d1d3a0828996a14daca6697b777f99d05464f1f27caffb242892acae6d4b952a96ca90a0808f3bc9523251abeab1fc1321b9248aeaa495cf14a977f1e482153b6e9bfeada045b5a0071ea3f220397cf1d3971cd29aa50fc9636613f5e69937c7b31e565414a0086202c405274eef66d29e86ee76d933c3debb4cc4e182373b6980ee2c606b4ca0777206af7ac6d1cd3ebc0d5320553c7550ddd8eb1d6b00350aa9d4753c1fb136a0f149f52d5625645ee858246d3294ca169afaa6c146313b15c1c86b2cf4bccd43a0cd6293863bde44dd4a1df7c7919538617e8f107140562087ae2885c35758702ea00d1e699c3613983556a77316d656b67831c13c5e069fb18e2e96e0ed1a80a21da0424155278afe97e32747e3c25fd3340e68e6350a9ea7a06327368064c074d6a5a0c34a527eec08998e829b2df246b503c28551b6f65ca6a0aa3b4350cb17200f8c80f90151a0744d00ff280e769c2daf908c1e8a4b5e5ea9a653295deb0d07160d83eac7435aa010ef6734ed120f8f8ee079d2bf6db2a234d731e7d08c2f31e4738abc0d8443568080a01755a82d129503f82ff0a92265bb8d056a81456a346b788522aad848a99e000580a0ea8e41e2016c801b99b2bf7333bc5f27283388df703546c69d69057b21b085a8a0b0889dcbe633df5eb88b7a612bb25bd685c5d661dbd38b6819d0c197ab30e07680a084d71f99e326177e070f1618a05fb1bb9e3257cc9ea9c2e9cdc367943f41c4dda042d09c033a316c486dd6052b725fefc6d575ecb1a92389ed51db07236cde662180a080a3d9222507178bb567c5e1041070f041661bf60179e5595b044b10cb88fb8580a0334e35ff43871b958ff4b604161c6da0288f61a12316ed4f0a377d3fc06df37aa02081102b6f79d26a1ca5984a8abd89cf434be02ca2f2c4862494dc34dde73fe880e49f2087fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace83828a1c';
+        let root1 = '0xda929e3057a947262f252e7e6d821d03af1652d1fcc923c7b3e8e43195ad9e72';
+        let offset1 = 0x23;
+
+        let proof2 = '0x821234';
+        let root2 = '0x821234';
+        let offset2 = 0x20;
 
         it("Should return true while ok", async function () {
-            expect(await eccu.checkNodeHash(proof, offset, root)).to.equal(true);
+            expect(await eccu.checkNodeHash(proof1, offset1, root1)).to.equal(true);
+            expect(await eccu.checkNodeHash(proof2, offset2, root2)).to.equal(true);
         });
 
         it("Should return false while not ok", async function () {
-            expect(await eccu.checkNodeHash(proof, 0x20, root)).to.equal(false);
-            expect(await eccu.checkNodeHash(proof, offset, empty32)).to.equal(false);
+            expect(await eccu.checkNodeHash(proof1, 0x20, root1)).to.equal(false);
+            expect(await eccu.checkNodeHash(proof1, offset1, empty32)).to.equal(false);
         });
 
     });
@@ -339,6 +364,7 @@ describe("ECCUtils", function () {
                 expect(output._offset).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
+            await rlpGetNextBytesTest('0x0000000080',0x24,'0x',0x25,false); // 0 byte
             await rlpGetNextBytesTest('0x000087ffffffffffffff0000',0x22,'0xffffffffffffff',0x2a,false); // 7 bytes
             await rlpGetNextBytesTest('0x0000a0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',0x43,false); // 32 bytes
             await rlpGetNextBytesTest('0x0000b821ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',0x45,false); // 33 bytes
@@ -355,6 +381,7 @@ describe("ECCUtils", function () {
                 expect(output._offset).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
+            await rlpGetNextBytes32Test('0x0000000080',0x24,'0x0000000000000000000000000000000000000000000000000000000000000000',0x25,false); // 0 byte
             await rlpGetNextBytes32Test('0x000087ffffffffffffff0000',0x22,'0xffffffffffffff00000000000000000000000000000000000000000000000000',0x2a,false); // 7 bytes
             await rlpGetNextBytes32Test('0x0000a0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',0x43,false); // 32 bytes
             await rlpGetNextBytes32Test('0x0000a1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,0,0,true); // 33 bytes , too long
@@ -371,6 +398,7 @@ describe("ECCUtils", function () {
                 expect(output._offset).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
+            await rlpGetNextAddressTest('0x0000000080',0x24,'0x0000000000000000000000000000000000000000',0x25,false); // 0 byte
             await rlpGetNextAddressTest('0x000086ffffffffffff0000',0x22,'0x0000000000000000000000000000fFfffFFfFfff',0x29,false); // 6 bytes
             await rlpGetNextAddressTest('0x000094ffffffffffffffffffffffffffffffffffffffff0000',0x22,'0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF',0x37,false); // 20 bytes
             await rlpGetNextAddressTest('0x0000a0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,0,0,true); // 32 bytes , too long
@@ -387,6 +415,7 @@ describe("ECCUtils", function () {
                 expect(output._offset).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
+            await rlpGetNextUint64Test('0x0000000080',0x24,0x0,0x25,false); // 0 byte
             await rlpGetNextUint64Test('0x00008600ffffffffff0000',0x22,0xffffffffff,0x29,false); // 6 bytes
             await rlpGetNextUint64Test('0x000088000000ffffffffff0000',0x22,0xffffffffff,0x2b,false); // 8 bytes
             await rlpGetNextUint64Test('0x000089ffffffffffffffffff0000',0x22,0,0,true); // 9 bytes , too long
@@ -403,6 +432,7 @@ describe("ECCUtils", function () {
                 expect(output._offset).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
+            await rlpGetNextUint256Test('0x0000000080',0x24,0x0,0x25,false); // 0 byte
             await rlpGetNextUint256Test('0x00008700000000000fff0000',0x22,0x0fff,0x2a,false); // 7 bytes
             await rlpGetNextUint256Test('0x0000a000000000000000000000000000000000000000000000000000000000ffffffff0000',0x22,0xffffffff,0x43,false); // 32 bytes
             await rlpGetNextUint256Test('0x0000a1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000',0x22,0,0,true); // 33 bytes , too long
@@ -477,8 +507,16 @@ describe("ECCUtils", function () {
         let keyHex4 = '0x0102030405';
         let keyCompact4 = '0x112345';
 
+        let keyHex5 = '0x10';
+        let keyCompact5 = '0x20';
+        let keyBytes5 = '0x';
+
+        let keyHex6 = '0x';
+        let keyCompact6 = '0x00';
+
         it("bytesToHex", async function () {
             expect(await eccu.bytesToHex(keyBytes1)).to.equal(keyHex1);
+            expect(await eccu.bytesToHex(keyBytes5)).to.equal(keyHex5);
         });
 
         it("compactToHex", async function () {
@@ -486,6 +524,8 @@ describe("ECCUtils", function () {
             expect(await eccu.compactToHex(keyCompact2)).to.equal(keyHex2);
             expect(await eccu.compactToHex(keyCompact3)).to.equal(keyHex3);
             expect(await eccu.compactToHex(keyCompact4)).to.equal(keyHex4);
+            expect(await eccu.compactToHex(keyCompact5)).to.equal(keyHex5);
+            expect(await eccu.compactToHex(keyCompact6)).to.equal(keyHex6);
         });
 
         it("hexToCompact", async function () {
@@ -493,6 +533,8 @@ describe("ECCUtils", function () {
             expect(await eccu.hexToCompact(keyHex2)).to.equal(keyCompact2);
             expect(await eccu.hexToCompact(keyHex3)).to.equal(keyCompact3);
             expect(await eccu.hexToCompact(keyHex4)).to.equal(keyCompact4);
+            expect(await eccu.hexToCompact(keyHex5)).to.equal(keyCompact5);
+            expect(await eccu.hexToCompact(keyHex6)).to.equal(keyCompact6);
         });
 
     });
@@ -509,7 +551,7 @@ describe("ECCUtils", function () {
         });
 
         it("Should fail if input is empty", async function () {
-            await expect(eccu.takeOneByte('0x')).to.be.reverted;
+            await expect(eccu.takeOneByte('0x')).to.be.revertedWith("takeOneByte: empty input");
         });
 
     });
@@ -558,6 +600,5 @@ describe("ECCUtils", function () {
         });
 
     });
-
 });
 
