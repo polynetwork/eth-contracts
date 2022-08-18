@@ -52,10 +52,11 @@ contract OntEvmCrossChainManagerImplementation is Const, OntConst {
         require(eccd.getCurEpochValidatorPkBytes().length == 0, "EthCrossChainData contract has already been initialized!");
         
         // get validators
-        address[] memory validators = ECCUtils.getHeaderValidators(rawHeader);
+        (uint64 epochEndHeight, address[] memory validators) = ECCUtils.getHeaderValidatorsAndEpochEndHeight(rawHeader);
         require(validators.length != 0, "Given block header does not contain any validator");
 
         // put epoch information
+        require(eccd.putCurEpochEndHeight(epochEndHeight), "Save Zion current epoch end height to Data contract failed!");
         require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion current epoch start height to Data contract failed!");
         require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(validators)), "Save Zion current epoch validators to Data contract failed!");
         
@@ -76,11 +77,12 @@ contract OntEvmCrossChainManagerImplementation is Const, OntConst {
         // verify header
         bytes memory curPkBytes = eccd.getCurEpochValidatorPkBytes();
         address[] memory validators = ECCUtils.decodeValidators(curPkBytes);
-        address[] memory newValidators = ECCUtils.getHeaderValidators(rawHeader);
+        (uint64 epochEndHeight, address[] memory newValidators) = ECCUtils.getHeaderValidatorsAndEpochEndHeight(rawHeader);
         require(newValidators.length != 0, "Given block header does not contain any validator");
         require(ECCUtils.verifyHeader(keccak256(rawHeader), rawSeals, validators), "Verify header failed");
         
         // put new epoch info
+        require(eccd.putCurEpochEndHeight(epochEndHeight), "Save Zion current epoch end height to Data contract failed!");
         require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion next epoch height to Data contract failed!");
         require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(newValidators)), "Save Zion next epoch validators to Data contract failed!");
         
@@ -134,6 +136,7 @@ contract OntEvmCrossChainManagerImplementation is Const, OntConst {
         address[] memory validators = ECCUtils.decodeValidators(eccd.getCurEpochValidatorPkBytes());
         
         // verify block.height
+        require(header.number>=eccd.getCurEpochStartHeight(), "Invalid block height, before CurEpochStartHeight");
         require(header.number>=eccd.getCurEpochStartHeight(), "Invalid block height");
         
         // verify header

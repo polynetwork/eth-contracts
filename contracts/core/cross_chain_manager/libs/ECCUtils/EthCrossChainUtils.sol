@@ -162,7 +162,7 @@ library ECCUtils {
         }
     }
 
-    function getHeaderValidators(bytes memory rawHeader) internal view returns(address[] memory validators) {
+    function getHeaderValidatorsAndEpochEndHeight(bytes memory rawHeader) internal view returns(uint64 endHeight,address[] memory validators) {
         uint size;
         
         (,uint offset) = rlpReadKind(rawHeader,0x20);
@@ -174,6 +174,7 @@ library ECCUtils {
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of Extra(with digest)
         (size,offset) = rlpReadKind(rawHeader, offset + 0x20); // position of Extra(without digest) , a bytes32 digest is appended before extra
         (size,offset) = rlpReadKind(rawHeader, offset);        // position of Extra.EpochStartHeight
+        (endHeight,offset) = rlpGetNextUint64(rawHeader, offset); // position of Extra.EpochEndHeight
         (bytes memory validatorsBytes,) = rlpGetNextBytes(rawHeader, offset + size);
         size = validatorsBytes.length;
         require(size%ZION_ADDRESS_LEN==0,"invalid header extra validatorSet");

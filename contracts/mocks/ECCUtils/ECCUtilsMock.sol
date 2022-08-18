@@ -74,8 +74,8 @@ contract ECCUtilsMock {
         return ECCUtils.bytesToAddress(_bs);
     }
 
-    function getHeaderValidators(bytes memory rawHeader) public view returns(address[] memory validators) {
-        return ECCUtils.getHeaderValidators(rawHeader);
+    function getHeaderValidatorsAndEpochEndHeight(bytes memory rawHeader) public view returns(uint64 endHeight, address[] memory validators) {
+        return ECCUtils.getHeaderValidatorsAndEpochEndHeight(rawHeader);
     }
     
     function decodeValidators(bytes memory validatorBytes) public pure returns(address[] memory validators) {
