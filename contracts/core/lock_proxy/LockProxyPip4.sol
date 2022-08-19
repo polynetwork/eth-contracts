@@ -6,13 +6,16 @@ import "./../../libs/common/ZeroCopySource.sol";
 import "./../../libs/common/ZeroCopySink.sol";
 import "./../../libs/utils/Utils.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
+import "./../../libs/token/ERC20/ERC20Detailed.sol";
 import "./../../libs/lifecycle/Pausable.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 
-contract LockProxyWithLP is Ownable, Pausable {
+contract LockProxyPip4 is Ownable, Pausable {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
+
+    uint8 constant StandardDecimals = 18;
 
     struct TxArgs {
         bytes toAssetHash;
@@ -139,11 +142,11 @@ contract LockProxyWithLP is Ownable, Pausable {
         require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
         bytes memory toAssetHash = assetHashMap[fromAssetHash][toChainId];
         require(toAssetHash.length != 0, "empty illegal toAssetHash");
-
+    
         TxArgs memory txArgs = TxArgs({
             toAssetHash: toAssetHash,
             toAddress: toAddress,
-            amount: amount
+            amount: _toStandardDecimals(fromAssetHash, amount)
         });
         bytes memory txData = _serializeTxArgs(txArgs);
         
@@ -179,34 +182,39 @@ contract LockProxyWithLP is Ownable, Pausable {
 
         require(args.toAddress.length != 0, "toAddress cannot be empty");
         address toAddress = Utils.bytesToAddress(args.toAddress);
+
+        uint amount = _fromStandardDecimals(toAssetHash, args.amount);
         
-        require(_transferFromContract(toAssetHash, toAddress, args.amount), "transfer asset from lock_proxy contract to toAddress failed!");
+        require(_transferFromContract(toAssetHash, toAddress, amount), "transfer asset from lock_proxy contract to toAddress failed!");
         
-        emit UnlockEvent(toAssetHash, toAddress, args.amount);
+        emit UnlockEvent(toAssetHash, toAddress, amount);
         return true;
     }
 
-
     function deposit(address originAssetAddress, uint amount) whenNotPaused payable public returns (bool) {
         require(amount != 0, "amount cannot be zero!");
-
         require(_transferToContract(originAssetAddress, amount), "transfer asset from fromAddress to lock_proxy contract failed!");
 
         address LPTokenAddress = assetLPMap[originAssetAddress];
         require(LPTokenAddress != address(0), "do not support deposite this token");
-        require(_transferFromContract(LPTokenAddress, msg.sender, amount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
+
+        uint standardAmount = _toStandardDecimals(originAssetAddress, amount);
+        uint lpAmount = _fromStandardDecimals(LPTokenAddress, standardAmount);
+        require(_transferFromContract(LPTokenAddress, msg.sender, lpAmount), "transfer proof of liquidity from lock_proxy contract to fromAddress failed!");
         
         emit depositEvent(msg.sender, originAssetAddress, LPTokenAddress, amount);
         return true;
     }
 
-    function withdraw(address targetTokenAddress, uint amount) whenNotPaused public returns (bool) {
-        require(amount != 0, "amount cannot be zero!");
+    function withdraw(address targetTokenAddress, uint lpAmount) whenNotPaused public returns (bool) {
+        require(lpAmount != 0, "amount cannot be zero!");
 
         address LPTokenAddress = assetLPMap[targetTokenAddress];
         require(LPTokenAddress != address(0), "do not support withdraw this token");
-        require(_transferToContract(LPTokenAddress, amount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
+        require(_transferToContract(LPTokenAddress, lpAmount), "transfer proof of liquidity from fromAddress to lock_proxy contract failed!");
 
+        uint standardAmount = _toStandardDecimals(LPTokenAddress, lpAmount);
+        uint amount = _fromStandardDecimals(targetTokenAddress, standardAmount);
         require(_transferFromContract(targetTokenAddress, msg.sender, amount), "transfer asset from lock_proxy contract to fromAddress failed!");
         
         emit withdrawEvent(msg.sender, targetTokenAddress, LPTokenAddress, amount);
@@ -221,6 +229,38 @@ contract LockProxyWithLP is Ownable, Pausable {
         } else {
             IERC20 erc20Token = IERC20(fromAssetHash);
             return erc20Token.balanceOf(address(this));
+        }
+    }
+
+    function _toStandardDecimals(address token, uint256 amount) internal view returns (uint256) {
+        uint8 decimals;
+        if (token == address(0)) {
+            decimals = 18;
+        } else {
+            decimals = ERC20Detailed(token).decimals();
+        }
+        if (decimals == StandardDecimals) {
+            return amount;
+        } else if (decimals < StandardDecimals) {
+            return amount * (10 ** uint(StandardDecimals - decimals));
+        } else {
+            return amount / (10 ** uint(decimals - StandardDecimals));
+        }
+    }
+
+    function _fromStandardDecimals(address token, uint256 standardAmount) internal view returns (uint256) {
+        uint8 decimals;
+        if (token == address(0)) {
+            decimals = 18;
+        } else {
+            decimals = ERC20Detailed(token).decimals();
+        }
+        if (decimals == StandardDecimals) {
+            return standardAmount;
+        } else if (decimals < StandardDecimals) {
+            return standardAmount / (10 ** uint(StandardDecimals - decimals));
+        } else {
+            return standardAmount * (10 ** uint(decimals - StandardDecimals));
         }
     }
 
