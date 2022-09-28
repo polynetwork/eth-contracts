@@ -67,7 +67,8 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
                 whiteListContractMethodMap[toContract][methods[j]] = true;
             }
         }
-        
+    }
+    
     function removeContractMethodWhiteList(bytes[] memory contractMethodWhiteList) public onlyWhiteLister {
         for (uint i=0;i<contractMethodWhiteList.length;i++) {
             (address toContract,bytes[] memory methods) = abi.decode(contractMethodWhiteList[i],(address,bytes[]));
