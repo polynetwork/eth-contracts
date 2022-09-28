@@ -259,7 +259,8 @@ library Utils {
             for (uint j = 0; j < _keepers.length; j++) {
                 if (_signers[i] == _keepers[j]) {
                     m++;
-                    delete _keepers[j];
+                    // delete _keepers[j];
+                    _keepers[j] = 0x7777777777777777777777777777777777777777;
                 }
             }
         }
