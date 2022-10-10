@@ -174,7 +174,7 @@ library ECCUtils {
         (,offset) = rlpReadKind(rawHeader, offset + size); // position of Extra(with digest)
         (size,offset) = rlpReadKind(rawHeader, offset + 0x20); // position of Extra(without digest) , a bytes32 digest is appended before extra
         (size,offset) = rlpReadKind(rawHeader, offset);        // position of Extra.EpochStartHeight
-        (endHeight,offset) = rlpGetNextUint64(rawHeader, offset); // position of Extra.EpochEndHeight
+        (endHeight,offset) = rlpGetNextUint64(rawHeader, offset + size); // position of Extra.EpochEndHeight
         (bytes memory validatorsBytes,) = rlpGetNextBytes(rawHeader, offset);
         size = validatorsBytes.length;
         require(size%ZION_ADDRESS_LEN==0,"invalid header extra validatorSet");
