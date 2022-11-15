@@ -117,8 +117,7 @@ contract EthCrossChainManagerImplementation is Const {
         bytes memory accountProof, 
         bytes memory storageProof,
         bytes memory rawCrossTx
-    ) public returns (bool)
-    {
+    ) public returns (bool){
         ECCUtils.Header memory header = ECCUtils.decodeHeader(rawHeader);
         ECCUtils.CrossTx memory crossTx = ECCUtils.decodeCrossTx(rawCrossTx);
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
@@ -138,8 +137,8 @@ contract EthCrossChainManagerImplementation is Const {
         require(ECCUtils.bytesToBytes32(storageValue) == keccak256(rawCrossTx), "Verify proof failed");
         
         // check & put tx exection information
-        require(!eccd.checkIfFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.txHash)), "the transaction has been executed!");
-        require(eccd.markFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.txHash)), "Save crosschain tx exist failed!");
+        require(!eccd.checkIfFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.crossTxParam.crossChainId)), "the transaction has been executed!");
+        require(eccd.markFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.crossTxParam.crossChainId)), "Save crosschain tx exist failed!");
         require(crossTx.crossTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
 
         address toContract = ECCUtils.bytesToAddress(crossTx.crossTxParam.toContract);
@@ -153,8 +152,7 @@ contract EthCrossChainManagerImplementation is Const {
 
     function _executeCrossChainTx(
         address _toContract, bytes memory _method, bytes memory _args, bytes memory _fromContractAddr, uint64 _fromChainId
-    ) internal returns (bool)
-    {   
+    ) internal returns (bool){   
         // verify to contract valid
         require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(_toContract), "The passed in address is not from the factory!");
         require(_toContract!=EthCrossChainDataAddress, "Don't try to call eccd!");
