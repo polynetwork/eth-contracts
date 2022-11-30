@@ -43,16 +43,25 @@ contract RippleLockProxy is Ownable {
     mapping(uint64 => bytes) public proxyHashMap;
 
     uint public rippleMinAmount = 30000000;
-    uint64 public rippleChainId = 39;
+    uint64 public rippleChainId = 223;
     uint public rippleAddressLength = 20;
 
     event SetManagerEvent(address manager);
     event BindProxyEvent(uint64 toChainId, bytes targetProxyHash);
     event UnlockEvent(address toAssetHash, address toAddress, uint256 amount);
     event LockEvent(address fromAssetHash, address fromAddress, uint64 toChainId, bytes toAssetHash, bytes toAddress, uint256 amount);
-    
+
     constructor(string memory name, string memory symbol, uint8 decimals) public {
         token = new bridgeAsset(name, symbol, decimals, address(this));
+    }
+
+    function initialize(string memory name, string memory symbol, uint8 decimals, address owner) public {
+        require(address(token) == address(0), "already initialized");
+        token = new bridgeAsset(name, symbol, decimals, address(this));
+        rippleMinAmount = 30000000;
+        rippleChainId = 223;
+        rippleAddressLength = 20;
+        _transferOwnership(owner);
     }
 
     modifier onlyManagerContract() {
