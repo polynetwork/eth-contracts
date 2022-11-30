@@ -39,7 +39,7 @@ contract RippleLockProxy is Ownable {
         uint256 amount;
     }
     bridgeAsset public token;
-    address public managerContract;
+    address public managerProxyContract;
     mapping(uint64 => bytes) public proxyHashMap;
 
     uint public rippleMinAmount = 30000000;
@@ -56,13 +56,13 @@ contract RippleLockProxy is Ownable {
     }
 
     modifier onlyManagerContract() {
-        require(_msgSender() == managerContract, "msgSender is not EthCrossChainManagerContract");
+        require(_msgSender() == managerProxyContract, "msgSender is not EthCrossChainManagerContract");
         _;
     }
     
     function setManager(address ethCCMAddr) onlyOwner public {
-        managerContract = ethCCMAddr;
-        emit SetManagerEvent(managerContract);
+        managerProxyContract = ethCCMAddr;
+        emit SetManagerEvent(managerProxyContract);
     }
     
     function bindProxyHash(uint64 toChainId, bytes memory targetProxyHash) onlyOwner public returns (bool) {
@@ -102,7 +102,7 @@ contract RippleLockProxy is Ownable {
         });
         bytes memory txData = _serializeTxArgs(txArgs);
         
-        IEthCrossChainManager eccm = IEthCrossChainManager(managerContract);
+        IEthCrossChainManager eccm = IEthCrossChainManager(managerProxyContract);
         
         bytes memory toProxyHash = proxyHashMap[toChainId];
         require(toProxyHash.length != 0, "empty illegal toProxyHash");
