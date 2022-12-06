@@ -19,8 +19,8 @@ contract EthCrossChainManagerImplementation is Const {
     
     // see in Const.sol
     // address constant EthCrossChainDataAddress = 0x0000000000000000000000000000000000000000;
+    // address constant EthCrossChainCallerFactoryAddress = 0x0000000000000000000000000000000000000000; 
     // bytes constant ZionCrossChainManagerAddress = "0x000000000000000000000000000000000000000000";
-    // bytes constant ZionValidaterManagerAddress = "0x000000000000000000000000000000000000000000";
     // uint constant chainId = 0;
     
     function getZionChainId() public pure returns(uint) {
@@ -46,10 +46,11 @@ contract EthCrossChainManagerImplementation is Const {
         require(eccd.getCurEpochValidatorPkBytes().length == 0, "EthCrossChainData contract has already been initialized!");
         
         // get validators
-        address[] memory validators = ECCUtils.getHeaderValidators(rawHeader);
+        (uint64 epochEndHeight, address[] memory validators) = ECCUtils.getHeaderValidatorsAndEpochEndHeight(rawHeader);
         require(validators.length != 0, "Given block header does not contain any validator");
 
         // put epoch information
+        require(eccd.putCurEpochEndHeight(epochEndHeight), "Save Zion current epoch end height to Data contract failed!");
         require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion current epoch start height to Data contract failed!");
         require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(validators)), "Save Zion current epoch validators to Data contract failed!");
         
@@ -70,11 +71,12 @@ contract EthCrossChainManagerImplementation is Const {
         // verify header
         bytes memory curPkBytes = eccd.getCurEpochValidatorPkBytes();
         address[] memory validators = ECCUtils.decodeValidators(curPkBytes);
-        address[] memory newValidators = ECCUtils.getHeaderValidators(rawHeader);
+        (uint64 epochEndHeight, address[] memory newValidators) = ECCUtils.getHeaderValidatorsAndEpochEndHeight(rawHeader);
         require(newValidators.length != 0, "Given block header does not contain any validator");
         require(ECCUtils.verifyHeader(keccak256(rawHeader), rawSeals, validators), "Verify header failed");
         
         // put new epoch info
+        require(eccd.putCurEpochEndHeight(epochEndHeight), "Save Zion current epoch end height to Data contract failed!");
         require(eccd.putCurEpochStartHeight(uint64(header.number + 1)), "Save Zion next epoch height to Data contract failed!");
         require(eccd.putCurEpochValidatorPkBytes(ECCUtils.encodeValidators(newValidators)), "Save Zion next epoch validators to Data contract failed!");
         
@@ -88,7 +90,7 @@ contract EthCrossChainManagerImplementation is Const {
         bytes calldata method, 
         bytes calldata txData
     ) external returns (bool) {
-        require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(msg.sender), "The caller is child of the caller factory!");
+        require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(msg.sender), "The caller is not child of the caller factory!");
         uint256 txHashIndex = IEthCrossChainData(EthCrossChainDataAddress).getEthTxHashIndex();
         bytes memory paramTxHash = ECCUtils.uint256ToBytes(txHashIndex);
         bytes memory crossChainId = abi.encodePacked(sha256(abi.encodePacked(address(this), paramTxHash)));
@@ -115,8 +117,7 @@ contract EthCrossChainManagerImplementation is Const {
         bytes memory accountProof, 
         bytes memory storageProof,
         bytes memory rawCrossTx
-    ) public returns (bool)
-    {
+    ) public returns (bool){
         ECCUtils.Header memory header = ECCUtils.decodeHeader(rawHeader);
         ECCUtils.CrossTx memory crossTx = ECCUtils.decodeCrossTx(rawCrossTx);
         IEthCrossChainData eccd = IEthCrossChainData(EthCrossChainDataAddress);
@@ -124,7 +125,8 @@ contract EthCrossChainManagerImplementation is Const {
         address[] memory validators = ECCUtils.decodeValidators(eccd.getCurEpochValidatorPkBytes());
         
         // verify block.height
-        require(header.number>=eccd.getCurEpochStartHeight(), "Invalid block height");
+        require(header.number>=eccd.getCurEpochStartHeight(), "Invalid block height, before CurEpochStartHeight");
+        require(header.number<=eccd.getCurEpochEndHeight(), "Invalid block height, after CurEpochEndHeight");
         
         // verify header
         require(ECCUtils.verifyHeader(keccak256(rawHeader), rawSeals, validators), "Verify header failed");
@@ -135,8 +137,8 @@ contract EthCrossChainManagerImplementation is Const {
         require(ECCUtils.bytesToBytes32(storageValue) == keccak256(rawCrossTx), "Verify proof failed");
         
         // check & put tx exection information
-        require(!eccd.checkIfFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.txHash)), "the transaction has been executed!");
-        require(eccd.markFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.txHash)), "Save crosschain tx exist failed!");
+        require(!eccd.checkIfFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.crossTxParam.crossChainId)), "the transaction has been executed!");
+        require(eccd.markFromChainTxExist(crossTx.fromChainID, ECCUtils.bytesToBytes32(crossTx.crossTxParam.crossChainId)), "Save crosschain tx exist failed!");
         require(crossTx.crossTxParam.toChainId == chainId, "This Tx is not aiming at this network!");
 
         address toContract = ECCUtils.bytesToAddress(crossTx.crossTxParam.toContract);
@@ -150,8 +152,7 @@ contract EthCrossChainManagerImplementation is Const {
 
     function _executeCrossChainTx(
         address _toContract, bytes memory _method, bytes memory _args, bytes memory _fromContractAddr, uint64 _fromChainId
-    ) internal returns (bool)
-    {   
+    ) internal returns (bool){   
         // verify to contract valid
         require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(_toContract), "The passed in address is not from the factory!");
         require(_toContract!=EthCrossChainDataAddress, "Don't try to call eccd!");

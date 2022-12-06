@@ -12,7 +12,7 @@ library ECCUtils {
     struct Header {
         bytes    root;
         uint256  number;
-    }
+    }   
 
     struct CrossTx {
         bytes  txHash;    // Zion txhash
@@ -162,7 +162,7 @@ library ECCUtils {
         }
     }
 
-    function getHeaderValidators(bytes memory rawHeader) internal view returns(address[] memory validators) {
+    function getHeaderValidatorsAndEpochEndHeight(bytes memory rawHeader) internal view returns(uint64 endHeight,address[] memory validators) {
         uint size;
         
         (,uint offset) = rlpReadKind(rawHeader,0x20);
@@ -171,13 +171,16 @@ library ECCUtils {
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of GasLimit
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of GasUsed
         (size,offset) = rlpReadKind(rawHeader, offset + size); // position of Time
-        (bytes memory extra,) = rlpGetNextBytes(rawHeader, offset + size);
-        (bytes memory validatorsBytes,) = rlpGetNextBytes(extra, 0x40);
-        (size, offset) = rlpReadKind(validatorsBytes, 0x20);
+        (,offset) = rlpReadKind(rawHeader, offset + size); // position of Extra(with digest)
+        (,offset) = rlpReadKind(rawHeader, offset + 0x20); // position of Extra(without digest) , a bytes32 digest is appended before extra
+        (size,offset) = rlpReadKind(rawHeader, offset);        // position of Extra.EpochStartHeight
+        (endHeight,offset) = rlpGetNextUint64(rawHeader, offset + size); // position of Extra.EpochEndHeight
+        (bytes memory validatorsBytes,) = rlpGetNextBytes(rawHeader, offset);
+        size = validatorsBytes.length;
         require(size%ZION_ADDRESS_LEN==0,"invalid header extra validatorSet");
         validators = new address[](size/ZION_ADDRESS_LEN);
         for (uint i = 0; i*ZION_ADDRESS_LEN<size; i++) {
-            (address valAddr,) = rlpGetNextAddress(validatorsBytes, offset + i*ZION_ADDRESS_LEN);
+            (address valAddr,) = rlpGetNextAddress(validatorsBytes, 0x20 + i*ZION_ADDRESS_LEN);
             validators[i] = valAddr;
         }
     }
@@ -334,7 +337,8 @@ library ECCUtils {
         bytes memory _storageProof,
         bytes memory _storageIndex
     ) internal pure returns(bytes memory value) {
-         // verify account proof
+        // verify account proof
+        // bytes memory _accountKey = abi.encodePacked(keccak256(_address));
         bytes memory _accountKey = _address;
         assembly { 
             mstore(add(_accountKey,0x20), keccak256(add(_accountKey, 0x20), mload(_accountKey)))
@@ -349,6 +353,7 @@ library ECCUtils {
         (bytes memory storageRoot,) = rlpSplit(account,offset);
         
         // verify storage proof
+        // bytes memory _storageKey = abi.encodePacked(keccak256(_storageIndex));
         bytes memory _storageKey = _storageIndex;
         assembly { 
             mstore(add(_storageKey,0x20), keccak256(add(_storageKey, 0x20), mload(_storageKey)))
@@ -400,6 +405,7 @@ library ECCUtils {
                     }
                 }
             } 
+            // if (_key.length==0) break;
         }
         
         require(_key.length==0,"proof:invalid key");
@@ -449,6 +455,7 @@ library ECCUtils {
     
     // won't change memory
     function hexToCompact(bytes memory keyHex) internal pure returns(bytes memory keyCompact) {
+        if (keyHex.length == 0) { return hex"00"; }
         uint hexLen = keyHex.length;
         uint compactLen = hexLen/2 + 1;
         uint t = 0;
@@ -558,7 +565,7 @@ library ECCUtils {
             }
             return (size,offset_);
         }
-        if (k<0xb7) {
+        if (k<0xb8) {
             assembly {
                 size := sub(k,0x80)
                 offset_ := add(offset,1)
@@ -572,7 +579,7 @@ library ECCUtils {
             }
             return (size,offset_);
         }
-        if (k<0xf7) {
+        if (k<0xf8) {
             assembly {
                 size := sub(k,0xc0)                    
                 offset_ := add(offset,1)
@@ -587,31 +594,4 @@ library ECCUtils {
         }
             
     }
-
-    // won't change memory
-    // function rlpReadKind(bytes memory raw, uint offset) internal pure returns(uint size ,uint offset_) {
-    //     assembly {
-    //         let k := shr(0xf8,mload(add(raw,offset)))
-    //         if lt(k,0x80) { // Byte
-    //             size := 1
-    //             offset_ := offset
-    //         }
-    //         if and(lt(k,0xb7), gt(k,0x7f)) { // StringShort
-    //             size := sub(k,0x80)
-    //             offset_ := add(offset,1)
-    //         }
-    //         if and(lt(k,0xc0), gt(k,0xb6)) { // StringLong
-    //             size := shr(mul(8,sub(0xd7,k)),mload(add(add(raw,offset),0x01)))
-    //             offset_ := add(offset,sub(k,0xb6))
-    //         }
-    //         if and(lt(k,0xf7), gt(k,0xbf)) { // ListShort
-    //             size := sub(k,0xc0)                    
-    //             offset_ := add(offset,1)
-    //         }
-    //         if gt(k,0xf6) { // ListLong
-    //             size := shr(mul(8,sub(0x117,k)),mload(add(add(raw,offset),0x01)))
-    //             offset_ := add(offset,sub(k,0xf6))
-    //         }
-    //     }
-    // }
 }

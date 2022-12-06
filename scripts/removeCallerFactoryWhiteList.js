@@ -5,17 +5,17 @@ hre.web3 = new Web3(hre.network.provider);
 require("colors");
 
 var configPath = './contractConfig.json'
-var whiteListConfig = './whiteListConfig.json'
+var whiteListConfig = './removeListConfig.json'
 
 async function main() {
-    console.log("\nSet whiteList on :".cyan, hre.network.name);
+    console.log("\nRemove whiteList on :".cyan, hre.network.name);
 
     const CallerFactory = await hre.ethers.getContractFactory("CallerFactoryWithAdmin");
     var CallerFactoryAddress = await readCallerProxyAddress(hre.network.name)
     var whiteList = await readWhiteList(hre.network.name)
     let factory = await CallerFactory.attach(CallerFactoryAddress)
 
-    let tx = await factory.setChildren(whiteList, true)
+    let tx = await factory.setChildren(whiteList, false)
     await tx.wait()
 
     console.log("\nDone.\n".magenta);
@@ -26,16 +26,16 @@ async function readWhiteList(networkName) {
     try {
         jsonData = fs.readFileSync(whiteListConfig)
     } catch(err) {
-        console.error("fail to read whiteList config file. ",err);
+        console.error("fail to read removeList config file. ",err);
         process.exit(1);
     }
     if (jsonData === undefined) {
-        console.error("empty whiteList config");
+        console.error("empty removeList config");
         process.exit(1);
     }
     var json=JSON.parse(jsonData.toString())
     if (json.WhiteLists === undefined) {
-        console.error("invalid whiteList config");
+        console.error("invalid removeList config");
         process.exit(1);
     }
     for (let i=0; i<json.WhiteLists.length; i++) {

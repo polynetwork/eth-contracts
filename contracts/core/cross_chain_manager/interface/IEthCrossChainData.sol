@@ -6,6 +6,8 @@ pragma solidity ^0.5.0;
 interface IEthCrossChainData {
     function putCurEpochStartHeight(uint64 startHeight) external returns (bool);
     function getCurEpochStartHeight() external view returns (uint64);
+    function putCurEpochEndHeight(uint64 startHeight) external returns (bool);
+    function getCurEpochEndHeight() external view returns (uint64);
     function putCurEpochId(uint64 epochId) external returns (bool);
     function getCurEpochId() external view returns (uint64);
     function putCurEpochValidatorPkBytes(bytes calldata curEpochPkBytes)  external returns (bool);

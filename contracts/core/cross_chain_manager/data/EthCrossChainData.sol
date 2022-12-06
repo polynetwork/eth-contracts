@@ -14,6 +14,8 @@ contract EthCrossChainData is IEthCrossChainData, Ownable, Pausable{
     
     uint64 public CurEpochStartHeight;
 
+    uint64 public CurEpochEndHeight;
+
     uint64 public CurEpochId;
     
     mapping(uint64 => mapping(bytes32 => bool)) FromChainTxExist;
@@ -27,6 +29,15 @@ contract EthCrossChainData is IEthCrossChainData, Ownable, Pausable{
 
     function getCurEpochStartHeight() public view returns (uint64) {
         return CurEpochStartHeight;
+    }
+    
+    function putCurEpochEndHeight(uint64 endHeight) public whenNotPaused onlyOwner returns (bool) {
+        CurEpochEndHeight = endHeight;
+        return true;
+    }
+
+    function getCurEpochEndHeight() public view returns (uint64) {
+        return CurEpochEndHeight;
     }
     
     function putCurEpochId(uint64 epochId) public whenNotPaused onlyOwner returns (bool) {

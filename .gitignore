@@ -3,6 +3,7 @@ info.txt
 tmp
 build
 .idea
+hardhat.config.js
 
 node_modules
 /.project
