@@ -90,7 +90,7 @@ contract EthCrossChainManagerImplementation is Const {
         bytes calldata method, 
         bytes calldata txData
     ) external returns (bool) {
-        require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(msg.sender), "The caller is child of the caller factory!");
+        require(CallerFactory(EthCrossChainCallerFactoryAddress).isChild(msg.sender), "The caller is not child of the caller factory!");
         uint256 txHashIndex = IEthCrossChainData(EthCrossChainDataAddress).getEthTxHashIndex();
         bytes memory paramTxHash = ECCUtils.uint256ToBytes(txHashIndex);
         bytes memory crossChainId = abi.encodePacked(sha256(abi.encodePacked(address(this), paramTxHash)));
