@@ -38,10 +38,7 @@ async function main() {
         await lockproxy.deployed();
         console.log("LockProxy deployed to:".green, lockproxy.address.blue);
         config.LockProxy = lockproxy.address
-<<<<<<< HEAD
         writeConfig(config)
-=======
->>>>>>> poly/master
     } else {
         console.log("\nLockProxy already deployed at".green, config.LockProxy.blue)
         lockproxy = await LockProxy.attach(config.LockProxy) 
