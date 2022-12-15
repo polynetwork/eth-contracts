@@ -14,11 +14,6 @@ contract VerifyHelper {
         ZionCrossChainManagerAddress = zionCrossChainManagerAddress;
     }
 
-    function set(address ethCrossChainDataAddress, bytes memory zionCrossChainManagerAddress) public {
-        EthCrossChainDataAddress = ethCrossChainDataAddress;
-        ZionCrossChainManagerAddress = zionCrossChainManagerAddress;
-    }
-
     function verifyHeader(
         bytes memory rawHeader,
         bytes memory rawSeals,
