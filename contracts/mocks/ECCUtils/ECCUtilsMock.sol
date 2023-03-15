@@ -12,6 +12,21 @@ contract ECCUtilsMock {
     function verifyHeader(bytes32 headerHash, bytes memory rawSeals, address[] memory validators) public pure returns(bool) {
         return ECCUtils.verifyHeader(headerHash, rawSeals, validators);
     }
+
+    function verifyHeader(bytes32 headerHash, bytes memory rawSeals) public pure returns(address[] memory) {
+        uint offset = 0x20;
+        bytes memory seal;
+
+        (rawSeals,) = rlpSplit(rawSeals, 0x20); 
+        uint sealCount = rawSeals.length/(67);
+        address[] memory signers = new address[](sealCount);
+
+        for (uint i=0; i<sealCount; i++) {
+            (seal,offset) = rlpSplit(rawSeals, offset);
+            signers[i] = verifySeal(headerHash, seal);
+        }
+        return signers;
+    }
     
     function verifySeal(bytes32 headerHash, bytes memory seal) public pure returns(address signer) {
         return ECCUtils.verifySeal(headerHash, seal);
