@@ -211,6 +211,7 @@ contract LockProxyMintBurn is Ownable {
     function _serializeTxArgs(TxArgs memory args) internal pure returns (bytes memory) {
         bytes memory buff;
         buff = abi.encodePacked(
+            ZeroCopySink.WriteVarBytes(args.toAssetHash),
             ZeroCopySink.WriteVarBytes(args.toAddress),
             ZeroCopySink.WriteUint255(args.amount)
             );
@@ -220,6 +221,7 @@ contract LockProxyMintBurn is Ownable {
     function _deserializeTxArgs(bytes memory valueBs) internal pure returns (TxArgs memory) {
         TxArgs memory args;
         uint256 off = 0;
+        (args.toAssetHash, off) = ZeroCopySource.NextVarBytes(valueBs, off);
         (args.toAddress, off) = ZeroCopySource.NextVarBytes(valueBs, off);
         (args.amount, off) = ZeroCopySource.NextUint255(valueBs, off);
         return args;
