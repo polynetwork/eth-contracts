@@ -9,7 +9,7 @@ import "./../upgrade/UpgradableECCM.sol";
 import "./../libs/EthCrossChainUtils.sol";
 import "./../interface/IEthCrossChainManager.sol";
 import "./../interface/IEthCrossChainData.sol";
-contract EthCrossChainManagerForRestartShort is IEthCrossChainManager, UpgradableECCM {
+contract EthCrossChainManagerForRestartShort is UpgradableECCM {
     using SafeMath for uint256;
 
     event ChangeBookKeeperEvent(uint256 height, bytes rawHeader);
