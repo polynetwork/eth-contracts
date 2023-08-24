@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const ethers = require("@nomiclabs/hardhat-ethers");
 const hre = require("hardhat");
 const Web3 = require("web3");
 const { expect } = require("chai");
@@ -17,8 +17,8 @@ describe.only("ECCUtils", function () {
     let addrs;
 
     beforeEach("Should init", async function () {
-        ECCUtilsMock = await ethers.getContractFactory("ECCUtilsMock");
-        [addr1, addr2, ...addrs] = await ethers.getSigners();
+        ECCUtilsMock = await hre.ethers.getContractFactory("ECCUtilsMock");
+        [addr1, addr2, ...addrs] = await hre.ethers.getSigners();
         eccu = await ECCUtilsMock.deploy();
     });
 
@@ -77,16 +77,16 @@ describe.only("ECCUtils", function () {
     });
 
     describe("verifyHeader", function () {
-        // let header = '0xf90271a02b2864068eeb4145b64f4ac04f5f4500e16b758a2b6d1795a7539082656e323ca01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794258af48e28e4a6846e931ddff8e1cdf8579821e5a0bfc1711d4a46f45c2422bc0c97c3a3e69ab5429b340f4a6f92224bfe0e1fed4da056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010d84fcc4db9f8084614d3d34b87bd983010a04846765746888676f312e31362e328664617277696e000000000000f859f85494258af48e28e4a6846e931ddff8e1cdf8579821e5948c09d936a1b408d6e0afaa537ba4e06c4504a0ae94c095448424a5ecd5ca7ccdadfaad127a9d7e88ec94d47a4e56e9262543db39d9203cf1a2e53735f83480c080a063746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365880000000000000000';
-        let headerHash = '0xcc558e6bf91b122eb2dc5fd68a3ca44198a78f2871c32315436c9afc147b108e';
-        let validators = ['0xD47a4e56e9262543Db39d9203CF1a2e53735f834','0xC095448424A5ECd5cA7CcDaDFaAD127a9d7E88ec','0x8c09D936a1B408D6e0afAA537ba4E06c4504a0AE','0x258af48e28e4a6846e931ddff8e1cdf8579821e5'];
-        let rawSealsValid1 = '0xf8c9b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001b84108c2d0c8988a3d0e84eb2385f662fd1469578552a84bc0f354818524a23c6c332b375216998855d143493352a090439de03a98cdad8569bb5af4486916c0143d00';
-        let rawSealsValid2 = '0xf9010cb8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001b84108c2d0c8988a3d0e84eb2385f662fd1469578552a84bc0f354818524a23c6c332b375216998855d143493352a090439de03a98cdad8569bb5af4486916c0143d00b841460f2f90d7f07fb99c0990ab38d15fc2fd3868239fa0be795db0f5b9240bdbea67ec09cff65cb125a171cb98a5c7c6f55ce0bda8086079dc23f777ebf4fbfc0e00';
-        let rawSealsInvalid1 = '0xf886b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001';
-        let rawSealsInvalid2 = '0xf8c9b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001b841460f2f90d7f07fb99c0990ab38d15fc2fd3868239fa0be795db0f5b9240bdbea67ec09cff65cb125a171cb98a5c7c6f55ce0bda8086079dc23f777ebf4fbfc0e00';
-        let rawSealsInvalid3 = '0xf8c9b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00';
-        let rawSealsInvalid4 = '0xf9010cb8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b84157d201dec3551d8333a75ff69c8cce5e991c26c5e7cc0d30fd68512c95034fa65ad3f496967c333de36c19d0d1cf05642106108cd7da4b4ea83a32b125478c6001b8417857f807dda72d9ab2062305dbc0837291ddd06e4c0faa86b98d644ef3ad48c15c9db9ee68d80175dc007c2724b40508bef467ac29ef98fc924ee5f6e318fe1d00b8410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-
+        // let header = '0xf90228a0df4418b616c081d43ed9fc95f0d4aade6dd53b8142501c2b50194ff657b8c5faa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794258af48e28e4a6846e931ddff8e1cdf8579821e5a065d89a0ab347c7447eb652cbc75bc47259fada45a1e20bd617d23b22433a7109a0cb1b6e0b67e482d7449e8fc0fc36b7f9ce5a9fb0cf45f6a9199a5d9e12216d5ea0d4e4d938901e00ea4da08917593dba522a19b68413162444389bb35251dd96e3b901000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001830f0cc08411e1a30083029bf88463f34193ad0000000000000000000000000000000000000000000000000000000000000000cc830f03c0830f0f78c080c080a063746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365880000000000000000';
+        let headerHash = '0x3783ca1fac023336e50f0bfc01a66f98b6c54a7c406c22b17159e775928f2e67';
+        let validators = ['0x258af48e28e4a6846e931ddff8e1cdf8579821e5','0x6a708455c8777630aac9d1e7702d13f7a865b27c','0x8c09d936a1b408d6e0afaa537ba4e06c4504a0ae','0xad3bf5ed640cc72f37bd21d64a65c3c756e9c88c'];
+        let rawSealsValid1 = '0xf8c9b841a223e26e4a97a82233a12364fc08ee186309ac43b6218d6437b21f67752cf2333e931dae8053b5abb0220b0a66f24a6945c2762817e6ae2b3c1f61ff4296690a01b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501';
+        let rawSealsValid2 = '0xf9010cb841a223e26e4a97a82233a12364fc08ee186309ac43b6218d6437b21f67752cf2333e931dae8053b5abb0220b0a66f24a6945c2762817e6ae2b3c1f61ff4296690a01b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501b84159d8a54f0840f9bcbfba3e881c74191f0a1593cdc0551d1fdf723cda10ac24af57e1c4278324ec9dc163752148005e975a78265ad688b81c4cc01524f59f811900';
+        let rawSealsInvalid1 = '0xf886b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501';
+        let rawSealsInvalid2 = '0xf8c9b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501b84159d8a54f0840f9bcbfba3e881c74191f0a1593cdc0551d1fdf723cda10ac24af57e1c4278324ec9dc163752148005e975a78265ad688b81c4cc01524f59f811900';
+        let rawSealsInvalid3 = '0xf8c9b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501';
+        let rawSealsInvalid4 = '0xf9010cb841a223e26e4a97a82233a12364fc08ee186309ac43b6218d6437b21f67752cf2333e931dae8053b5abb0220b0a66f24a6945c2762817e6ae2b3c1f61ff4296690a01b8415c7d47956a9e7044d598e328e5a53f2458a8424aa1302687c2a7faf307b22ecf22d531d5621b3018789c4da719e3cb602b714171eb519d0dcab8dbb023cd404401b841ef9c48bfb1ed827ad6a966d366679139167164045430694b80d77492eb78331d49a8a48c3b61991fe156b2426704dfd2bfd0c768fe22b815418c911d08e33d4501b8410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+        
         it("Should return true while there is enough valid seals", async function () {
             expect(await eccu.verifyHeader(headerHash, rawSealsValid1, validators)).to.equal(true);
         });
@@ -189,7 +189,7 @@ describe.only("ECCUtils", function () {
         it("Should return block.root and block.number", async function () {
             let header = await eccu.decodeHeader(rawHeader);
             expect(header.root).to.equal(root);
-            expect(header.number).to.equal(number);
+            expect(Number(header.number)).to.equal(number);
         });
 
         // TODO: update rawHeader
@@ -248,7 +248,7 @@ describe.only("ECCUtils", function () {
         });
 
         it("bytesToUint256", async function () {
-            expect(await eccu.bytesToUint256(_uint256Hex)).to.equal(_uint256);
+            expect(Number(await eccu.bytesToUint256(_uint256Hex))).to.equal(_uint256);
             await expect(eccu.bytesToUint256(_address)).to.be.revertedWith("bytes length is not 32.");  // invalid length
         });
 
@@ -308,7 +308,7 @@ describe.only("ECCUtils", function () {
             expect(res.sourceTxHash).to.equal(sourceTxHash);
             expect(res.crossChainId).to.equal(crossChainId);
             expect(res.fromContract).to.equal(fromContract);
-            expect(res.toChainId).to.equal(toChainId);
+            expect(Number(res.toChainId)).to.equal(toChainId);
             expect(res.toContract).to.equal(toContract);
             expect(res.method).to.equal(method);
             expect(res.args).to.equal(args);
@@ -317,11 +317,11 @@ describe.only("ECCUtils", function () {
         it("decodeCrossTx", async function () {
             let res = await eccu.decodeCrossTx(rawCrossTxBytes);
             expect(res.zionTxHash).to.equal(zionTxHash);
-            expect(res.fromChainID).to.equal(fromChainID);
+            expect(Number(res.fromChainID)).to.equal(fromChainID);
             expect(res.sourceTxHash).to.equal(sourceTxHash);
             expect(res.crossChainId).to.equal(crossChainId);
             expect(res.fromContract).to.equal(fromContract);
-            expect(res.toChainId).to.equal(toChainId);
+            expect(Number(res.toChainId)).to.equal(toChainId);
             expect(res.toContract).to.equal(toContract);
             expect(res.method).to.equal(method);
             expect(res.args).to.equal(args);
@@ -361,7 +361,7 @@ describe.only("ECCUtils", function () {
                 }
                 let output = await eccu.rlpGetNextBytes(raw,offset);
                 expect(output.res).to.equal(res);
-                expect(output._offset).to.equal(_offset);
+                expect(Number(output._offset)).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
             await rlpGetNextBytesTest('0x0000000080',0x24,'0x',0x25,false); // 0 byte
@@ -378,7 +378,7 @@ describe.only("ECCUtils", function () {
                 }
                 let output = await eccu.rlpGetNextBytes32(raw,offset);
                 expect(output.res).to.equal(res);
-                expect(output._offset).to.equal(_offset);
+                expect(Number(output._offset)).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
             await rlpGetNextBytes32Test('0x0000000080',0x24,'0x0000000000000000000000000000000000000000000000000000000000000000',0x25,false); // 0 byte
@@ -395,7 +395,7 @@ describe.only("ECCUtils", function () {
                 }
                 let output = await eccu.rlpGetNextAddress(raw,offset);
                 expect(output.res).to.equal(res);
-                expect(output._offset).to.equal(_offset);
+                expect(Number(output._offset)).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
             await rlpGetNextAddressTest('0x0000000080',0x24,'0x0000000000000000000000000000000000000000',0x25,false); // 0 byte
@@ -411,8 +411,8 @@ describe.only("ECCUtils", function () {
                     return
                 }
                 let output = await eccu.rlpGetNextUint64(raw,offset);
-                expect(output.res).to.equal(res);
-                expect(output._offset).to.equal(_offset);
+                expect(Number(output.res)).to.equal(res);
+                expect(Number(output._offset)).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
             await rlpGetNextUint64Test('0x0000000080',0x24,0x0,0x25,false); // 0 byte
@@ -428,8 +428,8 @@ describe.only("ECCUtils", function () {
                     return
                 }
                 let output = await eccu.rlpGetNextUint256(raw,offset);
-                expect(output.res).to.equal(res);
-                expect(output._offset).to.equal(_offset);
+                expect(Number(output.res)).to.equal(res);
+                expect(Number(output._offset)).to.equal(_offset);
                 expect(output._raw).to.equal(raw);
             }
             await rlpGetNextUint256Test('0x0000000080',0x24,0x0,0x25,false); // 0 byte
@@ -442,7 +442,7 @@ describe.only("ECCUtils", function () {
             let rlpSplitTest = async function (raw, offset, res, offset_) {
                 let output = await eccu.rlpSplit(raw,offset);
                 expect(output.res).to.equal(res);
-                expect(output.offset_).to.equal(offset_);
+                expect(Number(output.offset_)).to.equal(offset_);
             }
             let raw = '0x77'+'82ffff'+'b803ffffff'+'c480808080'+'f8058080808080';
             let offset1 = 0x20;
@@ -468,7 +468,7 @@ describe.only("ECCUtils", function () {
         it("rlpReadKind", async function () {
             let rlpReadKindTest = async function (raw, offset, size, offset_) {
                 let output = await eccu.rlpReadKind(raw, offset);
-                expect(output.size).to.equal(size);
+                expect(Number(output.size)).to.equal(size);
                 expect(Number(output.offset_)+size).to.equal(offset_);
             }
             let raw = '0x77'+'82ffff'+'b803ffffff'+'c480808080'+'f8058080808080';
@@ -547,7 +547,7 @@ describe.only("ECCUtils", function () {
             let b1 = 0x0a;
             let res = await eccu.takeOneByte(raw);
             expect(res.buf).to.equal(slice);
-            expect(res.i).to.equal(b1);
+            expect(Number(res.i)).to.equal(b1);
         });
 
         it("Should fail if input is empty", async function () {

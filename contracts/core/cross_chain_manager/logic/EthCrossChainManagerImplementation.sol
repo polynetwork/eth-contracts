@@ -16,7 +16,8 @@ contract EthCrossChainManagerImplementation is Const {
     event ChangeEpochEvent(uint256 height, bytes rawHeader, address[] oldValidators, address[] newValidators);
     event CrossChainEvent(address indexed sender, bytes txId, address proxyOrAssetContract, uint64 toChainId, bytes toContract, bytes rawdata);
     event VerifyHeaderAndExecuteTxEvent(uint64 fromChainID, bytes toContract, bytes crossChainTxHash, bytes fromChainTxHash);
-    
+    event ExecuteTxEvent(address toContract, bytes method, bytes args);
+
     // see in Const.sol
     // address constant EthCrossChainDataAddress = 0x0000000000000000000000000000000000000000;
     // address constant EthCrossChainCallerFactoryAddress = 0x0000000000000000000000000000000000000000; 
@@ -164,6 +165,8 @@ contract EthCrossChainManagerImplementation is Const {
         require(returnData.length != 0, "No return value from business contract!");
         bool res = abi.decode(returnData, (bool));
         require(res == true, "EthCrossChain call business contract return is not true");
+
+        emit ExecuteTxEvent(_toContract, _method, _args);
         
         return true;
     }

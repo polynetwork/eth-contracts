@@ -164,4 +164,17 @@ contract RippleLockProxy is Ownable {
         (args.toAddress, args.amount) = abi.decode(valueBs, (bytes,uint256));
         return args;
     }
+
+    // function for wrapper only
+    function assetHashMap(address fromAssetHash, uint64 toChainId) external view returns (bytes memory) {
+        return proxyHashMap[toChainId];
+    }
+    function lock(
+        address fromAssetHash, 
+        uint64 toChainId, 
+        bytes calldata toAddress, 
+        uint256 amount
+    ) external payable returns (bool) {
+        return lock(toChainId, toAddress, amount);
+    }
 }

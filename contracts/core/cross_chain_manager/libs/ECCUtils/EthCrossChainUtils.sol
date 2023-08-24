@@ -41,7 +41,7 @@ library ECCUtils {
 
         for (uint i=0; i<sealCount; i++) {
             (seal,offset) = rlpSplit(rawSeals, offset);
-            signers[i] = verifySeal(keccak256(abi.encodePacked(headerHash)), seal);
+            signers[i] = verifySeal(headerHash, seal);
             if (signers[i] == address(0)) {
                 return false;
             }
