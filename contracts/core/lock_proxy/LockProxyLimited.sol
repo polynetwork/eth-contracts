@@ -34,6 +34,8 @@ contract LockProxyLimited is LockProxyPausable {
         require(_transferFromContract(toAsset, toAddress, args.amount), "transfer asset from lock_proxy contract to toAddress failed!");
         
         emit UnlockEvent(toAsset, toAddress, args.amount);
+        
+        return true;
     }
 
     function _refreshQuota(address asset) internal {
