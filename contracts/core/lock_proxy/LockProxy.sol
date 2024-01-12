@@ -8,6 +8,12 @@ import "./../../libs/token/ERC20/SafeERC20.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 
+interface IBridgeAsset {
+
+    function mint(address to, uint256 amount) external;
+    
+    function burnFrom(address account, uint256 amount) external;
+}
 
 contract LockProxy is Ownable {
     using SafeMath for uint;
@@ -65,7 +71,7 @@ contract LockProxy is Ownable {
         require(amount != 0, "amount cannot be zero!");
         
         
-        require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
+        require(_burn(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
         
         bytes memory toAssetHash = assetHashMap[fromAssetHash][toChainId];
         require(toAssetHash.length != 0, "empty illegal toAssetHash");
@@ -112,7 +118,7 @@ contract LockProxy is Ownable {
         address toAddress = Utils.bytesToAddress(args.toAddress);
         
         
-        require(_transferFromContract(toAssetHash, toAddress, args.amount), "transfer asset from lock_proxy contract to toAddress failed!");
+        require(_mint(toAssetHash, toAddress, args.amount), "transfer asset from lock_proxy contract to toAddress failed!");
         
         emit UnlockEvent(toAssetHash, toAddress, args.amount);
         return true;
@@ -128,7 +134,7 @@ contract LockProxy is Ownable {
             return erc20Token.balanceOf(address(this));
         }
     }
-    function _transferToContract(address fromAssetHash, uint256 amount) internal returns (bool) {
+    function _burn(address fromAssetHash, uint256 amount) internal returns (bool) {
         if (fromAssetHash == address(0)) {
             // fromAssetHash === address(0) denotes user choose to lock ether
             // passively check if the received msg.value equals amount
@@ -138,33 +144,31 @@ contract LockProxy is Ownable {
             // make sure lockproxy contract will decline any received ether
             require(msg.value == 0, "there should be no ether transfer!");
             // actively transfer amount of asset from msg.sender to lock_proxy contract
-            require(_transferERC20ToContract(fromAssetHash, _msgSender(), address(this), amount), "transfer erc20 asset to lock_proxy contract failed!");
+            require(_burnERC20(fromAssetHash, _msgSender(), address(this), amount), "transfer erc20 asset to lock_proxy contract failed!");
         }
         return true;
     }
-    function _transferFromContract(address toAssetHash, address toAddress, uint256 amount) internal returns (bool) {
+    function _mint(address toAssetHash, address toAddress, uint256 amount) internal returns (bool) {
         if (toAssetHash == address(0x0000000000000000000000000000000000000000)) {
             // toAssetHash === address(0) denotes contract needs to unlock ether to toAddress
             // convert toAddress from 'address' type to 'address payable' type, then actively transfer ether
             address(uint160(toAddress)).transfer(amount);
         } else {
             // actively transfer amount of asset from lock_proxy contract to toAddress
-            require(_transferERC20FromContract(toAssetHash, toAddress, amount), "transfer erc20 asset from lock_proxy contract to toAddress failed!");
+            require(_mintERC20(toAssetHash, toAddress, amount), "transfer erc20 asset from lock_proxy contract to toAddress failed!");
         }
         return true;
     }
     
     
-    function _transferERC20ToContract(address fromAssetHash, address fromAddress, address toAddress, uint256 amount) internal returns (bool) {
-         IERC20 erc20Token = IERC20(fromAssetHash);
-        //  require(erc20Token.transferFrom(fromAddress, toAddress, amount), "trasnfer ERC20 Token failed!");
-         erc20Token.safeTransferFrom(fromAddress, toAddress, amount);
+    function _burnERC20(address fromAssetHash, address fromAddress, address toAddress, uint256 amount) internal returns (bool) {
+         IBridgeAsset erc20Token = IBridgeAsset(fromAssetHash);
+         erc20Token.burnFrom(fromAddress, amount);
          return true;
     }
-    function _transferERC20FromContract(address toAssetHash, address toAddress, uint256 amount) internal returns (bool) {
-         IERC20 erc20Token = IERC20(toAssetHash);
-        //  require(erc20Token.transfer(toAddress, amount), "trasnfer ERC20 Token failed!");
-         erc20Token.safeTransfer(toAddress, amount);
+    function _mintERC20(address toAssetHash, address toAddress, uint256 amount) internal returns (bool) {
+         IBridgeAsset erc20Token = IBridgeAsset(toAssetHash);
+         erc20Token.mint(toAddress, amount);
          return true;
     }
     
